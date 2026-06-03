@@ -10,6 +10,23 @@ def board():
         [ 4,  2,  3,  5,  6,  3,  2,  4],
     ]
 
+def go(board, dirs, team, square): #dir is list of direction tuples, team is 1 or -1, square is tuple of 2 ints
+    possibles = []
+    for dir in dirs:
+        current = square
+        while True:
+            current[0] += dir[0]
+            current[1] += dir[1]
+            if current[0] < 0 or current[1] < 0 or current[0] >= len(board) or current[1] >= 8:
+                break
+            if board[current[0]][current[1]] / team > 0: #square occupied by teammate piece
+                break
+            if board[current[0]][current[1]] / team < 0: #enemy team
+                possibles.append(current)
+                break
+            if board[current[0]][current[1]] == 0:
+                possibles.append(current)
+    return possibles
 
 import pygame
 
