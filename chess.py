@@ -60,7 +60,7 @@ def knight(board, team, square):
     return possibles
 
 def pawn(board, team, square):
-    return (min(square[0]+1, 7), square[1]) #fix this later
+    return [(min(square[0]+1, 7), square[1])] if team == -1 else [(max(square[0]-1, 0), square[1])] #fix this later
 
 def get_legal_moves(board, square):
     piece = board[square[0]][square[1]]
@@ -179,18 +179,30 @@ while run:
                     new_j = 7 - max(0, min(7, (piece['rect'].centery - board_rect.top) // (board_rect.height // 8)))
 
                     start_i, start_j = piece.pop('start_cell')
+                    start_center = piece.pop('start_center', None)
 
-                    board[7 - start_j][start_i] = 0
-                    board[7 - new_j][new_i] = piece['value']
+                    start_square = (7 - start_j, start_i)
+                    end_square = (7 - new_j, new_i)
 
-                    pieces = []
-                    for r_idx, row in enumerate(board):
-                        for c_idx, val in enumerate(row):
-                            if val != 0:
-                                current_j = 7 - r_idx
-                                img = images[val]
-                                rect = img.get_rect(center=get_grid_center(c_idx, current_j))
-                                pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
+                    legal = get_legal_moves(board, start_square)
+
+                    if end_square in legal and end_square != start_square:
+                        # legal move, apply it
+                        board[start_square[0]][start_square[1]] = 0
+                        board[end_square[0]][end_square[1]] = piece['value']
+
+                        pieces = []
+                        for r_idx, row in enumerate(board):
+                            for c_idx, val in enumerate(row):
+                                if val != 0:
+                                    current_j = 7 - r_idx
+                                    img = images[val]
+                                    rect = img.get_rect(center=get_grid_center(c_idx, current_j))
+                                    pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
+                    else:
+                        # illegal return to position
+                        if start_center is not None:
+                            piece['rect'].center = start_center
                     break
 
         elif event.type == pygame.MOUSEMOTION:
