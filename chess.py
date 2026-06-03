@@ -13,19 +13,19 @@ def board():
 def go(board, dirs, team, square): #dir is list of direction tuples, team is 1 or -1, square is tuple of 2 ints
     possibles = []
     for dir in dirs:
-        current = square
+        cy, cx = square[0], square[1]
         while True:
-            current[0] += dir[0]
-            current[1] += dir[1]
-            if current[0] < 0 or current[1] < 0 or current[0] >= len(board) or current[1] >= 8:
+            cy += dir[0]
+            cx += dir[1]
+            if cy < 0 or cx < 0 or cy >= len(board) or cx >= 8:
                 break
-            if board[current[0]][current[1]] / team > 0: #square occupied by teammate piece
+            if board[cy][cx] * team > 0: #square occupied by teammate piece
                 break
-            if board[current[0]][current[1]] / team < 0: #enemy team
-                possibles.append(current)
+            if board[cy][cx] * team < 0: #enemy team
+                possibles.append((cy, cx))
                 break
-            if board[current[0]][current[1]] == 0:
-                possibles.append(current)
+            if board[cy][cx] == 0:
+                possibles.append((cy, cx))
     return possibles
 
 def rook(board, team, square):
