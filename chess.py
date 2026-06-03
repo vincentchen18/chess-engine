@@ -38,6 +38,27 @@ def queen(board, team, square):
     return rook(board, team, square) + bishop(board, team, square)
 import pygame
 
+def check_valid(square):
+    if 0 <= square[0] <= 7 and 0 <= square[1] <= 7:
+        return True
+    return False
+
+def king(board, team, square):
+    legal_dirs = [(1,1),(1,0),(1,-1),(0,1),(0,-1),(-1,1),(-1,0),(-1,-1)]
+    possibles = []
+    for dir in legal_dirs:
+        if check_valid((square[0] + dir[0], square[1] + dir[1])):
+            possibles.append((square[0] + dir[0], square[1] + dir[1]))
+    return possibles
+
+def knight(board, team, square):
+    legal_dirs = [(2,1), (-2,1), (1,2), (-1,2), (2,-1), (-2,-1),(1,-2),(-1,-2)]
+    possibles = []
+    for dir in legal_dirs:
+        if check_valid((square[0] + dir[0], square[1] + dir[1])):
+            possibles.append((square[0] + dir[0], square[1] + dir[1]))
+    return possibles
+
 pygame.init()
 window = pygame.display.set_mode((500, 500))
 clock = pygame.time.Clock()
