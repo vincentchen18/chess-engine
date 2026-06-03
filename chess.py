@@ -166,6 +166,8 @@ while run:
                         old_j = 7 - max(0, min(7, (piece['rect'].centery - board_rect.top) // (board_rect.height // 8)))
                         piece['start_cell'] = (old_i, old_j)
                         piece['start_center'] = piece['rect'].center
+                        start_square = (7 - old_j, old_i)
+                        piece['legal_moves'] = get_legal_moves(board, start_square)
                         pieces.remove(piece)
                         pieces.append(piece)
                         break
@@ -212,6 +214,21 @@ while run:
                     piece['rect'].y = event.pos[1] - piece['rel_pos'][1]
 
     window.blit(board_surface, (0, 0))
+    for piece in pieces:
+        if piece['dragging'] and 'legal_moves' in piece:
+            for sq in piece['legal_moves']:
+                row, col = sq
+                i = col
+                j = 7 - row
+                center = get_grid_center(i, j)
+
+                # if the destination has an enemy piece, draw a ring instead of a dot
+                if board[row][col] == 6 or board[row][col] == -6:
+                    pygame.draw.circle(window, (200, 0, 0, 120), center, size // 2 - 4)
+                elif board[row][col] != 0:
+                    pygame.draw.circle(window, (0, 0, 0, 120), center, size // 2 - 4, 5)
+                else:
+                    pygame.draw.circle(window, (0, 0, 0, 120), center, size // 6.5)
     for piece in pieces:
         window.blit(images[piece['value']], piece['rect'])
 
