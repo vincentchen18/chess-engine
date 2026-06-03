@@ -59,6 +59,31 @@ def knight(board, team, square):
             possibles.append((square[0] + dir[0], square[1] + dir[1]))
     return possibles
 
+def pawn(board, team, square):
+    return (min(square[0]+1, 7), square[1]) #fix this later
+
+def get_legal_moves(board, square):
+    piece = board[square[0]][square[1]]
+    if piece == 0:
+        return []  # empty square, no moves
+
+    team = 1 if piece > 0 else -1
+    piece_id = abs(piece)
+
+    if piece_id == 1:
+        return pawn(board, team, square)
+    elif piece_id == 2:  # knight
+        return knight(board, team, square)
+    elif piece_id == 3:  # bishop
+        return bishop(board, team, square)
+    elif piece_id == 4:  # rook
+        return rook(board, team, square)
+    elif piece_id == 5:  # queen
+        return queen(board, team, square)
+    elif piece_id == 6:  # king
+        return king(board, team, square)
+    return []
+
 pygame.init()
 window = pygame.display.set_mode((500, 500))
 clock = pygame.time.Clock()
