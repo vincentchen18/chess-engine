@@ -71,19 +71,28 @@ board_rect = pygame.Rect(start_x, start_y, size * 8, size * 8)
 
 for y in range(8):
     for x in range(8):
-        color = (192, 192, 164) if (x + y) % 2 == 0 else (96, 64, 32)
+        color = (240, 217, 181) if (x + y) % 2 == 0 else (181, 136, 99)
         pygame.draw.rect(board_surface, color, (start_x + x * size, start_y + y * size, size, size))
 
-unicode_map = {
-    1: '♙', 2: '%s' % '♘', 3: '♗', 4: '♖', 5: '♕', 6: '♔',
-    -1: '♟', -2: '♞', -3: '♝', -4: '♜', -5: '♛', -6: '♚'
+import sys
+import os
+def resource_path(relative):
+    if hasattr(sys, '_MEIPASS'): # this is so when we use pyinstaller to pack there are no errors
+        return os.path.join(sys._MEIPASS, relative)
+    return os.path.join(os.path.abspath('.'), relative)
+piece_files = {
+     1: 'white_pawn.png',   2: 'white_knight.png', 3: 'white_bishop.png',
+     4: 'white_rook.png',   5: 'white_queen.png',  6: 'white_king.png',
+    -1: 'black_pawn.png',  -2: 'black_knight.png', -3: 'black_bishop.png',
+    -4: 'black_rook.png',  -5: 'black_queen.png',  -6: 'black_king.png',
 }
 
-seguisy = pygame.font.SysFont("segoeuisymbol", size - 4)
 images = {}
-for val, sym in unicode_map.items():
-    color = (255, 255, 255) if val > 0 else (0, 0, 0)
-    images[val] = seguisy.render(sym, True, color)
+for val, filename in piece_files.items():
+    path = resource_path(os.path.join('pieces', filename))
+    img = pygame.image.load(path).convert_alpha()
+    img = pygame.transform.smoothscale(img, (size - 4, size - 4))
+    images[val] = img
 
 
 def get_grid_center(i, j):
@@ -113,18 +122,28 @@ while run:
             run = False
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            for piece in reversed(pieces):
-                if piece['rect'].collidepoint(event.pos):
-                    piece['dragging'] = True
-                    piece['rel_pos'] = (event.pos[0] - piece['rect'].x, event.pos[1] - piece['rect'].y)
 
-                    old_i = max(0, min(7, (piece['rect'].centerx - board_rect.left) // (board_rect.width // 8)))
-                    old_j = 7 - max(0, min(7, (piece['rect'].centery - board_rect.top) // (board_rect.height // 8)))
-                    piece['start_cell'] = (old_i, old_j)
+            if event.button == 3: #right click to drop piece
+                for piece in pieces:
+                    if piece['dragging']:
+                        piece['dragging'] = False
+                        piece['rect'].center = piece['start_center']
+                        piece.pop('start_cell', None)
+                        piece.pop('start_center', None)
+                        break
+            elif event.button == 1:
+                for piece in reversed(pieces):
+                    if piece['rect'].collidepoint(event.pos):
+                        piece['dragging'] = True
+                        piece['rel_pos'] = (event.pos[0] - piece['rect'].x, event.pos[1] - piece['rect'].y)
 
-                    pieces.remove(piece)
-                    pieces.append(piece)
-                    break
+                        old_i = max(0, min(7, (piece['rect'].centerx - board_rect.left) // (board_rect.width // 8)))
+                        old_j = 7 - max(0, min(7, (piece['rect'].centery - board_rect.top) // (board_rect.height // 8)))
+                        piece['start_cell'] = (old_i, old_j)
+                        piece['start_center'] = piece['rect'].center
+                        pieces.remove(piece)
+                        pieces.append(piece)
+                        break
 
         elif event.type == pygame.MOUSEBUTTONUP:
             for piece in pieces:
