@@ -1,4 +1,4 @@
-def board():
+def init_board():
     return [
         [-4, -2, -3, -5, -6, -3, -2, -4],
         [-1, -1, -1, -1, -1, -1, -1, -1],
@@ -38,8 +38,8 @@ def queen(board, team, square):
     return rook(board, team, square) + bishop(board, team, square)
 import pygame
 
-def check_valid(square):
-    if 0 <= square[0] <= 7 and 0 <= square[1] <= 7:
+def check_valid(board, team, square):
+    if 0 <= square[0] <= 7 and 0 <= square[1] <= 7 and board[square[0]][square[1]] * team < 0:
         return True
     return False
 
@@ -101,7 +101,7 @@ def get_grid_center(i, j):
     return x, y
 
 
-board = board()
+board = init_board()
 
 pieces = []
 for row_idx, row in enumerate(board):
