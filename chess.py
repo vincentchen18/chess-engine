@@ -39,7 +39,7 @@ def queen(board, team, square):
 import pygame
 
 def check_valid(board, team, square):
-    if 0 <= square[0] <= 7 and 0 <= square[1] <= 7 and board[square[0]][square[1]] * team < 0:
+    if 0 <= square[0] <= 7 and 0 <= square[1] <= 7 and board[square[0]][square[1]] * team <= 0:
         return True
     return False
 
@@ -47,7 +47,7 @@ def king(board, team, square):
     legal_dirs = [(1,1),(1,0),(1,-1),(0,1),(0,-1),(-1,1),(-1,0),(-1,-1)]
     possibles = []
     for dir in legal_dirs:
-        if check_valid((square[0] + dir[0], square[1] + dir[1])):
+        if check_valid(board, team, (square[0] + dir[0], square[1] + dir[1])):
             possibles.append((square[0] + dir[0], square[1] + dir[1]))
     return possibles
 
@@ -55,7 +55,7 @@ def knight(board, team, square):
     legal_dirs = [(2,1), (-2,1), (1,2), (-1,2), (2,-1), (-2,-1),(1,-2),(-1,-2)]
     possibles = []
     for dir in legal_dirs:
-        if check_valid((square[0] + dir[0], square[1] + dir[1])):
+        if check_valid(board, team, (square[0] + dir[0], square[1] + dir[1])):
             possibles.append((square[0] + dir[0], square[1] + dir[1]))
     return possibles
 
