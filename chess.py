@@ -28,12 +28,20 @@ def go(board, dirs, team, square): #dir is list of direction tuples, team is 1 o
                 possibles.append(current)
     return possibles
 
+def rook(board, team, square):
+    return go(board, [(1, 0), (-1, 0), (0, 1), (0, -1)], team, square)
+
+def bishop(board, team, square):
+    return go(board, [(1,1),(1,-1),(-1,1),(-1,-1)], team, square)
+
+def queen(board, team, square):
+    return rook(board, team, square) + bishop(board, team, square)
 import pygame
 
 pygame.init()
 window = pygame.display.set_mode((500, 500))
 clock = pygame.time.Clock()
-
+pygame.display.set_caption("Chessboard")
 board_surface = pygame.Surface(window.get_size())
 board_surface.fill((255, 255, 255))
 size = (min(window.get_size()) - 20) // 8
