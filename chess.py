@@ -140,8 +140,6 @@ def get_legal_moves(board, square):
             legs.append(move)
     return legs
 
-    return []
-
 pygame.init()
 window = pygame.display.set_mode((500, 500))
 clock = pygame.time.Clock()
