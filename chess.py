@@ -187,6 +187,7 @@ def get_grid_center(i, j):
 
 
 board = init_board()
+promoting = None
 
 pieces = []
 for row_idx, row in enumerate(board):
@@ -207,6 +208,30 @@ while run:
             run = False
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
+
+            if promoting is not None and event.button == 1:
+                square = promoting['square']
+                team = promoting['team']
+                options_center = get_grid_center(square[1], 7-square[0])
+                options_x, options_y = options_center[0]-size//2, options_center[1]-size//2
+                #select q, n, r, or b
+                choices = [5,2,4,3]
+                for index, piece_id in enumerate(choices):
+                    option_rectangle = pygame.Rect(options_x, options_y + index * size, size, size)
+                    if option_rectangle.collidepoint(event.pos):
+                        #selected
+                        board[square[0]][square[1]] = piece_id * team
+                        promoting = None
+                        pieces = []
+                        for r_idx, row in enumerate(board):
+                            for c_idx, val in enumerate(row):
+                                if val != 0:
+                                    current_j = 7 - r_idx
+                                    img = images[val]
+                                    rect = img.get_rect(center=get_grid_center(c_idx, current_j))
+                                    pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
+                        break
+                continue
 
             if event.button == 3: #right click to drop piece
                 for piece in pieces:
@@ -252,6 +277,9 @@ while run:
                         # legal move, apply it
                         board[start_square[0]][start_square[1]] = 0
                         board[end_square[0]][end_square[1]] = piece['value']
+                        moved_piece = piece['value']
+                        if abs(moved_piece) == 1 and end_square[0] in [0, 7]: #promotion
+                            promoting = {'square': end_square, 'team':moved_piece//abs(moved_piece)}
 
                         pieces = []
                         for r_idx, row in enumerate(board):
@@ -291,7 +319,18 @@ while run:
                     pygame.draw.circle(window, (0, 0, 0, 120), center, size // 6.5)
     for piece in pieces:
         window.blit(images[piece['value']], piece['rect'])
-
+    if promoting is not None:
+        square = promoting['square']
+        team = promoting['team']
+        options_center = get_grid_center(square[1], 7 - square[0])
+        options_x, options_y = options_center[0] - size // 2, options_center[1] - size // 2
+        choices = [5, 2, 4, 3]
+        for index, piece_id in enumerate(choices):
+            option_rectangle = pygame.Rect(options_x, options_y + index * size, size, size)
+            pygame.draw.rect(window, (250, 250, 250), option_rectangle)
+            pygame.draw.rect(window, (50, 50, 50), option_rectangle, 2)
+            img = images[piece_id * team]
+            window.blit(img, img.get_rect(center=option_rectangle.center))
     pygame.display.flip()
 
 pygame.quit()
