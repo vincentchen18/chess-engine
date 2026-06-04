@@ -111,6 +111,10 @@ def is_check(board, team, square):
     for coord in attack:
         if coord[1] != square[1] and board[coord[0]][coord[1]] == -team: # if pawn is on the same column it isn't attacking
             return True
+    attack = king(board, team, square)
+    for coord in attack:
+        if board[coord[0]][coord[1]] == -6*team: #enemy king
+            return True
     return False
 
 def get_legal_moves(board, square):
@@ -136,7 +140,7 @@ def get_legal_moves(board, square):
     for move in moves:
         shadow = [row[:] for row in board]
         shadow[move[0]][move[1]], shadow[square[0]][square[1]] = piece, 0
-        if not is_check(shadow, team, [(r, c) for c in range(8) for r in range(8) if board[r][c] == team*6][0]):
+        if not is_check(shadow, team, [(r, c) for c in range(8) for r in range(8) if shadow[r][c] == team*6][0]):
             legs.append(move)
     return legs
 
