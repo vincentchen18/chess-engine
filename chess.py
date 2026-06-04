@@ -84,7 +84,7 @@ def knight(board, team, square):
             possibles.append((square[0] + dir[0], square[1] + dir[1]))
     return possibles
 
-def pawn(board, team, square):
+def pawn(board, team, square, en_passant_square=None):
     possibles = []
     if team == 1: #white, pawns move down indexes
         newsquare = (square[0]-1, square[1])
@@ -117,7 +117,20 @@ def pawn(board, team, square):
             if board[newsquare2[0]][newsquare2[1]] > 0:
                 possibles.append(newsquare2)
         #can only move on to an empty square
+    if en_passant_target is not None: # en peasant
+        if team == 1:  # white captures diagonally up
+            for dcol in (-1, 1):
+                ep_sq = (square[0] - 1, square[1] + dcol)
+                if ep_sq == en_passant_target:
+                    possibles.append(ep_sq)
+        else:  # black captures diagonally down
+            for dcol in (-1, 1):
+                ep_sq = (square[0] + 1, square[1] + dcol)
+                if ep_sq == en_passant_target:
+                    possibles.append(ep_sq)
+
     return possibles
+
 
 def is_check(board, team, square):
     attack = rook(board, team, square) # check if attacked by rook or queen
@@ -150,7 +163,7 @@ def get_legal_moves(board, square):
     team = 1 if piece > 0 else -1
     piece_id = abs(piece)
     if piece_id == 1:
-        moves = pawn(board, team, square)
+        moves = pawn(board, team, square, en_passant_target)
     elif piece_id == 2:  # knight
         moves = knight(board, team, square)
     elif piece_id == 3:  # bishop
@@ -232,6 +245,7 @@ has_moved = {
     'black_queenside_rook':False,
 }
 run = True
+en_passant_target = None
 while run:
     clock.tick(60)
     event_list = pygame.event.get()
@@ -308,11 +322,16 @@ while run:
                     legal = get_legal_moves(board, start_square)
 
                     if end_square in legal and end_square != start_square:
+                        moved_piece = piece['value']
+                        is_en_passant = abs(moved_piece) == 1 and en_passant_target is not None and end_square == en_passant_target and start_square[1] != end_square[1]
                         # legal move, apply it
                         board[start_square[0]][start_square[1]] = 0
                         board[end_square[0]][end_square[1]] = piece['value']
-                        moved_piece = piece['value']
 
+                        if is_en_passant: # delete the enpassanted pawn
+                            captured_pawn_row = start_square[0]
+                            captured_pawn_col = end_square[1]
+                            board[captured_pawn_row][captured_pawn_col] = 0
                         if abs(moved_piece) == 6 and abs(end_square[1] - start_square[1]) == 2:
                             row = end_square[0]
                             if end_square[1] == 6:  # kingside castle
@@ -321,6 +340,12 @@ while run:
                             elif end_square[1] == 2:  # queenside castle
                                 board[row][3] = board[row][0]  # rook from a-file to d-file
                                 board[row][0] = 0
+                        # en peasant logic
+                        if abs(moved_piece) == 1 and abs(end_square[0] - start_square[0]) == 2:
+                            # pawn moved 2 squares, skip square is captuable
+                            en_passant_target = ((start_square[0] + end_square[0]) // 2, start_square[1])
+                        else:
+                            en_passant_target = None
 
                         if abs(moved_piece) == 1 and end_square[0] in [0, 7]: #promotion
                             promoting = {'square': end_square, 'team':moved_piece//abs(moved_piece)}
