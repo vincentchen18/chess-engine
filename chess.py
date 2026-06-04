@@ -132,6 +132,13 @@ def get_legal_moves(board, square):
         moves = queen(board, team, square)
     elif piece_id == 6:  # king
         moves = king(board, team, square)
+    legs = []
+    for move in moves:
+        shadow = [row[:] for row in board]
+        shadow[move[0]][move[1]], shadow[square[0]][square[1]] = piece, 0
+        if not is_check(shadow, team, [(r, c) for c in range(8) for r in range(8) if board[r][c] == team*6][0]):
+            legs.append(move)
+    return legs
 
     return []
 
