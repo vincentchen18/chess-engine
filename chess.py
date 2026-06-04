@@ -60,7 +60,39 @@ def knight(board, team, square):
     return possibles
 
 def pawn(board, team, square):
-    return [(min(square[0]+1, 7), square[1])] if team == -1 else [(max(square[0]-1, 0), square[1])] #fix this later
+    possibles = []
+    if team == 1: #white, pawns move down indexes
+        newsquare = (square[0]-1, square[1])
+        if 0 <= newsquare[0] <= 7 and 0 <= newsquare[1] <= 7 and board[newsquare[0]][newsquare[1]] == 0: #can only move on to an empty square
+            possibles.append(newsquare)
+            newersquare = (newsquare[0]-1, newsquare[1]) #3 conditions: first pawn move, unblocked, front not blocked
+            if 0 <= newersquare[0] <= 7 and 0 <= newersquare[1] <= 7 and board[newersquare[0]][newersquare[1]] == 0 and square[0] == 6:
+                possibles.append(newersquare)
+        # captures, only diagonal
+        newsquare1, newsquare2 = (square[0]-1, square[1]+1), (square[0]-1, square[1]-1)
+        if check_valid(board, team, newsquare1):
+            if board[newsquare1[0]][newsquare1[1]] < 0:
+                possibles.append(newsquare1)
+        if check_valid(board, team, newsquare2):
+            if board[newsquare2[0]][newsquare2[1]] < 0:
+                possibles.append(newsquare2)
+    elif team == -1:  # black, pawns move up indexes
+        newsquare = (square[0]+1, square[1])
+        if 0 <= newsquare[0] <= 7 and 0 <= newsquare[1] <= 7 and board[newsquare[0]][newsquare[1]] == 0:  # can only move on to an empty square
+            possibles.append(newsquare)
+            newersquare = (newsquare[0]+1, newsquare[1])  # 3 conditions: first pawn move, unblocked, front not blocked
+            if 0 <= newersquare[0] <= 7 and 0 <= newersquare[1] <= 7 and board[newersquare[0]][newersquare[1]] == 0 and square[0] == 1:
+                possibles.append(newersquare)
+            # captures, only diagonal
+        newsquare1, newsquare2 = (square[0]+1, square[1]+1), (square[0]+1, square[1]-1)
+        if check_valid(board, team, newsquare1):
+            if board[newsquare1[0]][newsquare1[1]] > 0:
+                possibles.append(newsquare1)
+        if check_valid(board, team, newsquare2):
+            if board[newsquare2[0]][newsquare2[1]] > 0:
+                possibles.append(newsquare2)
+        #can only move on to an empty square
+    return possibles
 
 def get_legal_moves(board, square):
     piece = board[square[0]][square[1]]
