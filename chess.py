@@ -51,6 +51,31 @@ def king(board, team, square):
             possibles.append((square[0] + dir[0], square[1] + dir[1]))
     return possibles
 
+def castle(board, team, square, has_moved):
+    moves = []
+    row = int(3.5*team+3.5)
+    if square != (row, 4): #not on correct starting square
+        return []
+    king_key = 'white_king' if team == 1 else 'black_king'
+    if has_moved[king_key]:
+        return []
+    if is_check(board, team, square):
+        return []
+
+    # kingside castling
+    rook_key = 'white_kingside_rook' if team == 1 else 'black_kingside_rook'
+    if not has_moved[rook_key] and board[row][7] == team*4: #verify rook not moved and the rook is still there (not captured)
+        if board[row][5] == 0 and board[row][6] == 0: # castling squares not blocked
+            if not is_check(board, team, (row, 5)) and not is_check(board, team, (row, 6)): #make sure king doesnt castle into or thru check
+                moves.append((row, 6))
+    rook_key = 'white_queenside_rook' if team == 1 else 'black_queenside_rook'
+    if not has_moved[rook_key] and board[row][0] == team*4:
+        if board[row][1] == 0 and board[row][2] == 0 and board[row][3] == 0:
+            if not is_check(board, team, (row, 3)) and not is_check(board, team, (row, 2)):
+                moves.append((row, 2))
+    return moves
+
+
 def knight(board, team, square):
     legal_dirs = [(2,1), (-2,1), (1,2), (-1,2), (2,-1), (-2,-1),(1,-2),(-1,-2)]
     possibles = []
@@ -136,6 +161,7 @@ def get_legal_moves(board, square):
         moves = queen(board, team, square)
     elif piece_id == 6:  # king
         moves = king(board, team, square)
+        moves.extend(castle(board, team, square, has_moved))
     legs = []
     for move in moves:
         shadow = [row[:] for row in board]
@@ -197,7 +223,14 @@ for row_idx, row in enumerate(board):
             img = images[val]
             rect = img.get_rect(center=get_grid_center(col_idx, j))
             pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
-
+has_moved = {
+    'white_king':False,
+    'white_kingside_rook':False,
+    'white_queenside_rook':False,
+    'black_king':False,
+    'black_kingside_rook':False,
+    'black_queenside_rook':False,
+}
 run = True
 while run:
     clock.tick(60)
@@ -279,8 +312,35 @@ while run:
                         board[start_square[0]][start_square[1]] = 0
                         board[end_square[0]][end_square[1]] = piece['value']
                         moved_piece = piece['value']
+
+                        if abs(moved_piece) == 6 and abs(end_square[1] - start_square[1]) == 2:
+                            row = end_square[0]
+                            if end_square[1] == 6:  # kingside castle
+                                board[row][5] = board[row][7]  # rook from h-file to f-file
+                                board[row][7] = 0
+                            elif end_square[1] == 2:  # queenside castle
+                                board[row][3] = board[row][0]  # rook from a-file to d-file
+                                board[row][0] = 0
+
                         if abs(moved_piece) == 1 and end_square[0] in [0, 7]: #promotion
                             promoting = {'square': end_square, 'team':moved_piece//abs(moved_piece)}
+                        # CASTLING VARIABLES
+                        if moved_piece == 6:  # white king
+                            has_moved['white_king'] = True
+                        elif moved_piece == -6:  # black king
+                            has_moved['black_king'] = True
+                        elif moved_piece == 4:  # white rook
+                            if start_square == (7, 0):  # a1
+                                has_moved['white_rook_queenside'] = True
+                            elif start_square == (7, 7):  # h1
+                                has_moved['white_rook_kingside'] = True
+                        elif moved_piece == -4:  # black rook
+                            if start_square == (0, 0):  # a8
+                                has_moved['black_rook_queenside'] = True
+                            elif start_square == (0, 7):  # h8
+                                has_moved['black_rook_kingside'] = True
+
+                        # finish castling chekcs
 
                         pieces = []
                         for r_idx, row in enumerate(board):
