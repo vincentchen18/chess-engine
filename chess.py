@@ -94,6 +94,25 @@ def pawn(board, team, square):
         #can only move on to an empty square
     return possibles
 
+def is_check(board, team, square):
+    attack = rook(board, team, square) # check if attacked by rook or queen
+    for coord in attack:
+        if board[coord[0]][coord[1]] == -4*team or board[coord[0]][coord[1]] == -5*team:
+            return True
+    attack = bishop(board, team, square) # check if attacked by bishop or queen
+    for coord in attack:
+        if board[coord[0]][coord[1]] == -3*team or board[coord[0]][coord[1]] == -5*team:
+            return True
+    attack = knight(board, team, square) # check if attacked by knight
+    for coord in attack:
+        if board[coord[0]][coord[1]] == -2*team:
+            return True
+    attack = pawn(board, team, square)
+    for coord in attack:
+        if coord[1] != square[1] and board[coord[0]][coord[1]] == -team: # if pawn is on the same column it isn't attacking
+            return True
+    return False
+
 def get_legal_moves(board, square):
     piece = board[square[0]][square[1]]
     if piece == 0:
