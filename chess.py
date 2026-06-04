@@ -226,6 +226,7 @@ def get_grid_center(i, j):
 
 
 board = init_board()
+current_turn = 1
 promoting = None
 
 pieces = []
@@ -278,6 +279,7 @@ while run:
                                     img = images[val]
                                     rect = img.get_rect(center=get_grid_center(c_idx, current_j))
                                     pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
+                        current_turn = -current_turn  # change turn
                         break
                 continue
 
@@ -292,6 +294,9 @@ while run:
             elif event.button == 1:
                 for piece in reversed(pieces):
                     if piece['rect'].collidepoint(event.pos):
+                        piece_team = 1 if piece['value'] > 0 else -1
+                        if piece_team != current_turn: # not your turn! so im not going to let you move the piece.
+                            break
                         piece['dragging'] = True
                         piece['rel_pos'] = (event.pos[0] - piece['rect'].x, event.pos[1] - piece['rect'].y)
 
@@ -375,6 +380,8 @@ while run:
                                     img = images[val]
                                     rect = img.get_rect(center=get_grid_center(c_idx, current_j))
                                     pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
+                        if promoting is None:
+                            current_turn = -current_turn
                     else:
                         # illegal return to position
                         if start_center is not None:
