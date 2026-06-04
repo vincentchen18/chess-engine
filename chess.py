@@ -120,19 +120,19 @@ def get_legal_moves(board, square):
 
     team = 1 if piece > 0 else -1
     piece_id = abs(piece)
-
     if piece_id == 1:
-        return pawn(board, team, square)
+        moves = pawn(board, team, square)
     elif piece_id == 2:  # knight
-        return knight(board, team, square)
+        moves = knight(board, team, square)
     elif piece_id == 3:  # bishop
-        return bishop(board, team, square)
+        moves = bishop(board, team, square)
     elif piece_id == 4:  # rook
-        return rook(board, team, square)
+        moves = rook(board, team, square)
     elif piece_id == 5:  # queen
-        return queen(board, team, square)
+        moves = queen(board, team, square)
     elif piece_id == 6:  # king
-        return king(board, team, square)
+        moves = king(board, team, square)
+
     return []
 
 pygame.init()
