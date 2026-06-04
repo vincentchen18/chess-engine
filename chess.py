@@ -216,8 +216,9 @@ while run:
                 options_x, options_y = options_center[0]-size//2, options_center[1]-size//2
                 #select q, n, r, or b
                 choices = [5,2,4,3]
+                direction = 1 if team == 1 else -1
                 for index, piece_id in enumerate(choices):
-                    option_rectangle = pygame.Rect(options_x, options_y + index * size, size, size)
+                    option_rectangle = pygame.Rect(options_x, options_y + index * size * direction, size, size)
                     if option_rectangle.collidepoint(event.pos):
                         #selected
                         board[square[0]][square[1]] = piece_id * team
@@ -325,8 +326,9 @@ while run:
         options_center = get_grid_center(square[1], 7 - square[0])
         options_x, options_y = options_center[0] - size // 2, options_center[1] - size // 2
         choices = [5, 2, 4, 3]
+        direction = 1 if team == 1 else -1
         for index, piece_id in enumerate(choices):
-            option_rectangle = pygame.Rect(options_x, options_y + index * size, size, size)
+            option_rectangle = pygame.Rect(options_x, options_y + index * size * direction, size, size)
             pygame.draw.rect(window, (250, 250, 250), option_rectangle)
             pygame.draw.rect(window, (50, 50, 50), option_rectangle, 2)
             img = images[piece_id * team]
