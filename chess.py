@@ -478,6 +478,15 @@ while run:
                 glow_rect = glow.get_rect(center=piece['rect'].center)
                 window.blit(glow, glow_rect)
     for piece in pieces:
+        if abs(piece['value']) == 6 and is_check(board, piece['value']//abs(piece['value']), [(r,c) for r in range(8) for c in range(8) if board[r][c] == piece['value']][0]):  # the losing king
+            glow_size = int(size * 1.6)  # slightly bigger than a square
+            if 'red_glow' not in icons:  # build once, save/cache
+                icons['red_glow'] = make_red_glow(glow_size)
+            glow = icons['red_glow']
+            glow_rect = glow.get_rect(center=piece['rect'].center)
+            window.blit(glow, glow_rect)
+
+    for piece in pieces:
         window.blit(images[piece['value']], piece['rect'])
     if promoting is not None:
         square = promoting['square']
