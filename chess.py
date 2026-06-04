@@ -183,6 +183,29 @@ def get_legal_moves(board, square):
             legs.append(move)
     return legs
 
+def has_legal_moves(board, team):
+    for r in range(8):
+        for c in range(8):
+            if board[r][c] * team > 0: #teammate piece
+                if get_legal_moves(board, (r, c)):
+                    return True
+    return False
+
+
+def make_red_glow(s): #make a special ring for the loser king
+    surf = pygame.Surface((s, s), pygame.SRCALPHA)
+    center = (s // 2, s // 2)
+    max_radius = s // 2
+
+    # draw rings from outside in, each one more opaque
+    steps = 20
+    for i in range(steps):
+        radius = max_radius * (steps - i) // steps
+        alpha = int(180 * (i / steps) ** 2)  # quadratic falloff = smoother gradient
+        pygame.draw.circle(surf, (255, 50, 50, alpha), center, radius)
+
+    return surf
+
 pygame.init()
 window = pygame.display.set_mode((500, 500))
 clock = pygame.time.Clock()
@@ -210,13 +233,24 @@ piece_files = {
     -1: 'black_pawn.png',  -2: 'black_knight.png', -3: 'black_bishop.png',
     -4: 'black_rook.png',  -5: 'black_queen.png',  -6: 'black_king.png',
 }
-
+ # import assets from pieces/
 images = {}
 for val, filename in piece_files.items():
     path = resource_path(os.path.join('pieces', filename))
     img = pygame.image.load(path).convert_alpha()
     img = pygame.transform.smoothscale(img, (size - 4, size - 4))
     images[val] = img
+icon_files = {
+    'crown': 'crown.png',
+    'half':  'half.png',
+    'hash':  'hash.png',
+}
+icons = {}
+for name, filename in icon_files.items():
+    path = resource_path(os.path.join('pieces', filename))
+    img = pygame.image.load(path).convert_alpha()
+    img = pygame.transform.smoothscale(img, (size // 3, size // 3))
+    icons[name] = img
 
 
 def get_grid_center(i, j):
@@ -228,6 +262,8 @@ def get_grid_center(i, j):
 board = init_board()
 current_turn = 1
 promoting = None
+game_over = None
+loser = False
 
 pieces = []
 for row_idx, row in enumerate(board):
@@ -256,7 +292,8 @@ while run:
             run = False
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
-
+            if game_over:
+                continue
             if promoting is not None and event.button == 1:
                 square = promoting['square']
                 team = promoting['team']
@@ -280,6 +317,14 @@ while run:
                                     rect = img.get_rect(center=get_grid_center(c_idx, current_j))
                                     pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
                         current_turn = -current_turn  # change turn
+                        # check check/stale mate
+                        if not has_legal_moves(board, current_turn):
+                            king_pos = [(r, c) for r in range(8) for c in range(8) if board[r][c] == current_turn * 6][0]
+                            if is_check(board, current_turn, king_pos):
+                                game_over = 'checkmate'
+                                loser_team = current_turn  # they can't move AND are in check
+                            else:
+                                game_over = 'stalemate'  # can't move but not in check
                         break
                 continue
 
@@ -311,6 +356,8 @@ while run:
                         break
 
         elif event.type == pygame.MOUSEBUTTONUP:
+            if game_over:
+                continue
             for piece in pieces:
                 if piece['dragging']:
                     piece['dragging'] = False
@@ -382,6 +429,15 @@ while run:
                                     pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
                         if promoting is None:
                             current_turn = -current_turn
+
+                            # check check/stale mate
+                            if not has_legal_moves(board, current_turn):
+                                king_pos = [(r, c) for r in range(8) for c in range(8) if board[r][c] == current_turn * 6][0]
+                                if is_check(board, current_turn, king_pos):
+                                    game_over = 'checkmate'
+                                    loser_team = current_turn  # they can't move AND are in check
+                                else:
+                                    game_over = 'stalemate' # can't move but not in check
                     else:
                         # illegal return to position
                         if start_center is not None:
@@ -389,6 +445,8 @@ while run:
                     break
 
         elif event.type == pygame.MOUSEMOTION:
+            if game_over:
+                continue
             for piece in pieces:
                 if piece['dragging']:
                     piece['rect'].x = event.pos[0] - piece['rel_pos'][0]
@@ -410,6 +468,15 @@ while run:
                     pygame.draw.circle(window, (0, 0, 0, 120), center, size // 2 - 4, 5)
                 else:
                     pygame.draw.circle(window, (0, 0, 0, 120), center, size // 6.5)
+    if game_over == 'checkmate':
+        for piece in pieces:
+            if piece['value'] == loser_team * 6:  # the losing king
+                glow_size = int(size * 1.8)  # slightly bigger than a square
+                if 'red_glow' not in icons:  # build once, save/cache
+                    icons['red_glow'] = make_red_glow(glow_size)
+                glow = icons['red_glow']
+                glow_rect = glow.get_rect(center=piece['rect'].center)
+                window.blit(glow, glow_rect)
     for piece in pieces:
         window.blit(images[piece['value']], piece['rect'])
     if promoting is not None:
@@ -425,6 +492,22 @@ while run:
             pygame.draw.rect(window, (50, 50, 50), option_rectangle, 2)
             img = images[piece_id * team]
             window.blit(img, img.get_rect(center=option_rectangle.center))
+    if game_over:
+        icon_size = size // 3
+        for piece in pieces:
+            if abs(piece['value']) == 6:  # find each king
+                corner_x = piece['rect'].right - icon_size
+                corner_y = piece['rect'].top
+
+                if game_over == 'stalemate':
+                    window.blit(icons['half'], (corner_x, corner_y))
+                elif game_over == 'checkmate':
+                    if piece['value'] == loser_team * 6:
+                        window.blit(icons['hash'], (corner_x, corner_y))
+                    else:
+                        window.blit(icons['crown'], (corner_x, corner_y))
+
+    pygame.display.flip()
     pygame.display.flip()
 
 pygame.quit()
