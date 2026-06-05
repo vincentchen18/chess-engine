@@ -1,3 +1,23 @@
+def make_state():
+    return {
+        'board': init_board(),
+        'turn': 1,
+        'has_moved': {
+            'white_king': False, 'white_kingside_rook': False, 'white_queenside_rook': False,
+            'black_king': False, 'black_kingside_rook': False, 'black_queenside_rook': False,
+        },
+        'en_passant_target': None,
+    }
+
+
+def clone_state(state):
+    return {
+        'board': [row[:] for row in state['board']],
+        'turn': state['turn'],
+        'has_moved': dict(state['has_moved']),
+        'en_passant_target': state['en_passant_target'],
+    }
+
 def init_board():
     return [
         [-4, -2, -3, -5, -6, -3, -2, -4],
@@ -84,7 +104,7 @@ def knight(board, team, square):
             possibles.append((square[0] + dir[0], square[1] + dir[1]))
     return possibles
 
-def pawn(board, team, square, en_passant_square=None):
+def pawn(board, team, square, en_passant_target=None):
     possibles = []
     if team == 1: #white, pawns move down indexes
         newsquare = (square[0]-1, square[1])
@@ -155,7 +175,8 @@ def is_check(board, team, square):
             return True
     return False
 
-def get_legal_moves(board, square):
+def get_legal_moves(state, square):
+    board = state['board']
     piece = board[square[0]][square[1]]
     if piece == 0:
         return []  # empty square, no moves
@@ -163,7 +184,7 @@ def get_legal_moves(board, square):
     team = 1 if piece > 0 else -1
     piece_id = abs(piece)
     if piece_id == 1:
-        moves = pawn(board, team, square, en_passant_target)
+        moves = pawn(board, team, square, state['en_passant_target'])
     elif piece_id == 2:  # knight
         moves = knight(board, team, square)
     elif piece_id == 3:  # bishop
@@ -174,7 +195,7 @@ def get_legal_moves(board, square):
         moves = queen(board, team, square)
     elif piece_id == 6:  # king
         moves = king(board, team, square)
-        moves.extend(castle(board, team, square, has_moved))
+        moves.extend(castle(board, team, square, state['has_moved']))
     legs = []
     for move in moves:
         shadow = [row[:] for row in board]
@@ -183,14 +204,84 @@ def get_legal_moves(board, square):
             legs.append(move)
     return legs
 
-def has_legal_moves(board, team):
+def has_legal_moves(state, team):
+    board = state['board']
     for r in range(8):
         for c in range(8):
             if board[r][c] * team > 0: #teammate piece
-                if get_legal_moves(board, (r, c)):
+                if get_legal_moves(state, (r, c)):
                     return True
     return False
 
+def get_all_moves(state):
+    board = state['board']
+    team = state['turn']
+    moves = []
+    for r in range(8):
+        for c in range(8):
+            if board[r][c] * team > 0:
+                for endsquare in get_legal_moves(state, (r,c)):
+                    if abs(board[r][c]) == 1 and endsquare[0] in (0, 7):
+                        for promote_to in (5, 4, 3, 2):  # each promotion is a different move.
+                            moves.append(((r, c), endsquare, promote_to))
+                    else:
+                        moves.append(((r, c), endsquare, None))
+    return moves
+
+def apply_move(state, start, end, promote_to=None):
+    board = state['board']
+    piece = board[start[0]][start[1]]
+
+    # en passant capture detection
+    is_ep = (abs(piece) == 1
+             and state['en_passant_target'] == end
+             and start[1] != end[1])
+
+    # normal move
+    board[end[0]][end[1]] = piece
+    board[start[0]][start[1]] = 0
+
+    # remove en passant captured pawn
+    if is_ep:
+        board[start[0]][end[1]] = 0
+
+    # castling: move rook
+    if abs(piece) == 6 and abs(end[1] - start[1]) == 2:
+        row = end[0]
+        if end[1] == 6:
+            board[row][5] = board[row][7]
+            board[row][7] = 0
+        elif end[1] == 2:
+            board[row][3] = board[row][0]
+            board[row][0] = 0
+
+    # castling bookeeping
+    if piece == 6:
+        state['has_moved']['white_king'] = True
+    elif piece == -6:
+        state['has_moved']['black_king'] = True
+    elif piece == 4:
+        if start == (7, 0):
+            state['has_moved']['white_queenside_rook'] = True
+        elif start == (7, 7):
+            state['has_moved']['white_kingside_rook'] = True
+    elif piece == -4:
+        if start == (0, 0):
+            state['has_moved']['black_queenside_rook'] = True
+        elif start == (0, 7):
+            state['has_moved']['black_kingside_rook'] = True
+
+    # promotion
+    if promote_to is not None:
+        board[end[0]][end[1]] = promote_to * (1 if piece > 0 else -1)
+
+    if abs(piece) == 1 and abs(end[0] - start[0]) == 2:
+        state['en_passant_target'] = ((start[0] + end[0]) // 2, start[1])
+    else:
+        state['en_passant_target'] = None
+
+    # flip turn
+    state['turn'] = -state['turn']
 
 def make_red_glow(s): #make a special ring for the loser king
     surf = pygame.Surface((s, s), pygame.SRCALPHA)
@@ -259,30 +350,57 @@ def get_grid_center(i, j):
     return x, y
 
 
-board = init_board()
-current_turn = 1
+def insufficient_material(state):
+    board = state['board']
+    white_pieces = []
+    black_pieces = []
+    for r in range(8):
+        for c in range(8):
+            piece = board[r][c]
+            if piece > 0 and piece != 6:  # white non-king
+                white_pieces.append((piece, r, c))
+            elif piece < 0 and piece != -6:  # black non-king
+                black_pieces.append((piece, r, c))
+
+    # any pawn, rook, queen so mate is possible so not over yet
+    for p, _, _ in white_pieces + black_pieces:
+        if abs(p) in (1, 4, 5):
+            return False
+
+    # only minor pieces (knights/bishops) and kings left
+    # K vs K
+    if len(white_pieces) == 0 and len(black_pieces) == 0:
+        return True
+    # K+minor vs K
+    if len(white_pieces) == 1 and len(black_pieces) == 0:
+        return True
+    if len(white_pieces) == 0 and len(black_pieces) == 1:
+        return True
+    # K+B vs K+B with bishops on same color
+    if len(white_pieces) == 1 and len(black_pieces) == 1:
+        wp, wr, wc = white_pieces[0]
+        bp, br, bc = black_pieces[0]
+        if abs(wp) == 3 and abs(bp) == 3:  # both bishops
+            if (wr + wc) % 2 == (br + bc) % 2:  # same color squares
+                return True
+    return False
+
+state = make_state()
 promoting = None
 game_over = None
-loser = False
+loser_team = None
+
+run = True
 
 pieces = []
-for row_idx, row in enumerate(board):
+for row_idx, row in enumerate(state['board']):
     for col_idx, val in enumerate(row):
         if val != 0:
             j = 7 - row_idx
             img = images[val]
             rect = img.get_rect(center=get_grid_center(col_idx, j))
             pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
-has_moved = {
-    'white_king':False,
-    'white_kingside_rook':False,
-    'white_queenside_rook':False,
-    'black_king':False,
-    'black_kingside_rook':False,
-    'black_queenside_rook':False,
-}
-run = True
-en_passant_target = None
+
 while run:
     clock.tick(60)
     event_list = pygame.event.get()
@@ -306,23 +424,23 @@ while run:
                     option_rectangle = pygame.Rect(options_x, options_y + index * size * direction, size, size)
                     if option_rectangle.collidepoint(event.pos):
                         #selected
-                        board[square[0]][square[1]] = piece_id * team
+                        state['board'][square[0]][square[1]] = piece_id * team
                         promoting = None
                         pieces = []
-                        for r_idx, row in enumerate(board):
+                        for r_idx, row in enumerate(state['board']):
                             for c_idx, val in enumerate(row):
                                 if val != 0:
                                     current_j = 7 - r_idx
                                     img = images[val]
                                     rect = img.get_rect(center=get_grid_center(c_idx, current_j))
                                     pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
-                        current_turn = -current_turn  # change turn
+                        state['turn'] = -state['turn']  # change turn
                         # check check/stale mate
-                        if not has_legal_moves(board, current_turn):
-                            king_pos = [(r, c) for r in range(8) for c in range(8) if board[r][c] == current_turn * 6][0]
-                            if is_check(board, current_turn, king_pos):
+                        if not has_legal_moves(state, state['turn']):
+                            king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn'] * 6][0]
+                            if is_check(state['board'], state['turn'], king_pos):
                                 game_over = 'checkmate'
-                                loser_team = current_turn  # they can't move AND are in check
+                                loser_team = state['turn']  # they can't move AND are in check
                             else:
                                 game_over = 'stalemate'  # can't move but not in check
                         break
@@ -340,7 +458,7 @@ while run:
                 for piece in reversed(pieces):
                     if piece['rect'].collidepoint(event.pos):
                         piece_team = 1 if piece['value'] > 0 else -1
-                        if piece_team != current_turn: # not your turn! so im not going to let you move the piece.
+                        if piece_team != state['turn']: # not your turn! so im not going to let you move the piece.
                             break
                         piece['dragging'] = True
                         piece['rel_pos'] = (event.pos[0] - piece['rect'].x, event.pos[1] - piece['rect'].y)
@@ -350,7 +468,7 @@ while run:
                         piece['start_cell'] = (old_i, old_j)
                         piece['start_center'] = piece['rect'].center
                         start_square = (7 - old_j, old_i)
-                        piece['legal_moves'] = get_legal_moves(board, start_square)
+                        piece['legal_moves'] = get_legal_moves(state, start_square)
                         pieces.remove(piece)
                         pieces.append(piece)
                         break
@@ -371,56 +489,56 @@ while run:
                     start_square = (7 - start_j, start_i)
                     end_square = (7 - new_j, new_i)
 
-                    legal = get_legal_moves(board, start_square)
+                    legal = get_legal_moves(state, start_square)
 
                     if end_square in legal and end_square != start_square:
                         moved_piece = piece['value']
-                        is_en_passant = abs(moved_piece) == 1 and en_passant_target is not None and end_square == en_passant_target and start_square[1] != end_square[1]
+                        is_en_passant = abs(moved_piece) == 1 and state['en_passant_target'] is not None and end_square == state['en_passant_target'] and start_square[1] != end_square[1]
                         # legal move, apply it
-                        board[start_square[0]][start_square[1]] = 0
-                        board[end_square[0]][end_square[1]] = piece['value']
+                        state['board'][start_square[0]][start_square[1]] = 0
+                        state['board'][end_square[0]][end_square[1]] = piece['value']
 
                         if is_en_passant: # delete the enpassanted pawn
                             captured_pawn_row = start_square[0]
                             captured_pawn_col = end_square[1]
-                            board[captured_pawn_row][captured_pawn_col] = 0
+                            state['board'][captured_pawn_row][captured_pawn_col] = 0
                         if abs(moved_piece) == 6 and abs(end_square[1] - start_square[1]) == 2:
                             row = end_square[0]
                             if end_square[1] == 6:  # kingside castle
-                                board[row][5] = board[row][7]  # rook from h-file to f-file
-                                board[row][7] = 0
+                                state['board'][row][5] = state['board'][row][7]  # rook from h-file to f-file
+                                state['board'][row][7] = 0
                             elif end_square[1] == 2:  # queenside castle
-                                board[row][3] = board[row][0]  # rook from a-file to d-file
-                                board[row][0] = 0
+                                state['board'][row][3] = state['board'][row][0]  # rook from a-file to d-file
+                                state['board'][row][0] = 0
                         # en peasant logic
                         if abs(moved_piece) == 1 and abs(end_square[0] - start_square[0]) == 2:
                             # pawn moved 2 squares, skip square is captuable
-                            en_passant_target = ((start_square[0] + end_square[0]) // 2, start_square[1])
+                            state['en_passant_target'] = ((start_square[0] + end_square[0]) // 2, start_square[1])
                         else:
-                            en_passant_target = None
+                            state['en_passant_target'] = None
 
                         if abs(moved_piece) == 1 and end_square[0] in [0, 7]: #promotion
                             promoting = {'square': end_square, 'team':moved_piece//abs(moved_piece)}
                         # CASTLING VARIABLES
                         if moved_piece == 6:  # white king
-                            has_moved['white_king'] = True
+                            state['has_moved']['white_king'] = True
                         elif moved_piece == -6:  # black king
-                            has_moved['black_king'] = True
+                            state['has_moved']['black_king'] = True
                         elif moved_piece == 4:  # white rook
                             if start_square == (7, 0):  # a1
-                                has_moved['white_rook_queenside'] = True
+                                state['has_moved']['white_queenside_rook'] = True
                             elif start_square == (7, 7):  # h1
-                                has_moved['white_rook_kingside'] = True
+                                state['has_moved']['white_kingside_rook'] = True
                         elif moved_piece == -4:  # black rook
                             if start_square == (0, 0):  # a8
-                                has_moved['black_rook_queenside'] = True
+                                state['has_moved']['black_queenside_rook'] = True
                             elif start_square == (0, 7):  # h8
-                                has_moved['black_rook_kingside'] = True
+                                state['has_moved']['black_kingside_rook'] = True
 
                         # finish castling chekcs
 
                         pieces = []
-                        for r_idx, row in enumerate(board):
+                        for r_idx, row in enumerate(state['board']):
                             for c_idx, val in enumerate(row):
                                 if val != 0:
                                     current_j = 7 - r_idx
@@ -428,14 +546,14 @@ while run:
                                     rect = img.get_rect(center=get_grid_center(c_idx, current_j))
                                     pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
                         if promoting is None:
-                            current_turn = -current_turn
+                            state['turn'] = -state['turn']
 
                             # check check/stale mate
-                            if not has_legal_moves(board, current_turn):
-                                king_pos = [(r, c) for r in range(8) for c in range(8) if board[r][c] == current_turn * 6][0]
-                                if is_check(board, current_turn, king_pos):
+                            if not has_legal_moves(state, state['turn']):
+                                king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn'] * 6][0]
+                                if is_check(state['board'], state['turn'], king_pos):
                                     game_over = 'checkmate'
-                                    loser_team = current_turn  # they can't move AND are in check
+                                    loser_team = state['turn']  # they can't move AND are in check
                                 else:
                                     game_over = 'stalemate' # can't move but not in check
                     else:
@@ -462,9 +580,9 @@ while run:
                 center = get_grid_center(i, j)
 
                 # if the destination has an enemy piece, draw a ring instead of a dot
-                if board[row][col] == 6 or board[row][col] == -6:
+                if state['board'][row][col] == 6 or state['board'][row][col] == -6:
                     pygame.draw.circle(window, (200, 0, 0, 120), center, size // 2 - 4)
-                elif board[row][col] != 0:
+                elif state['board'][row][col] != 0:
                     pygame.draw.circle(window, (0, 0, 0, 120), center, size // 2 - 4, 5)
                 else:
                     pygame.draw.circle(window, (0, 0, 0, 120), center, size // 6.5)
@@ -478,7 +596,7 @@ while run:
                 glow_rect = glow.get_rect(center=piece['rect'].center)
                 window.blit(glow, glow_rect)
     for piece in pieces:
-        if abs(piece['value']) == 6 and is_check(board, piece['value']//abs(piece['value']), [(r,c) for r in range(8) for c in range(8) if board[r][c] == piece['value']][0]):  # the losing king
+        if abs(piece['value']) == 6 and is_check(state['board'], piece['value']//abs(piece['value']), [(r,c) for r in range(8) for c in range(8) if state['board'][r][c] == piece['value']][0]):  # the losing king
             glow_size = int(size * 1.6)  # slightly bigger than a square
             if 'red_glow' not in icons:  # build once, save/cache
                 icons['red_glow'] = make_red_glow(glow_size)
