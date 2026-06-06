@@ -18,6 +18,11 @@ def clone_state(state):
         'en_passant_target': state['en_passant_target'],
     }
 
+def position_hash(state):
+    board_tuple = tuple(tuple(row) for row in state['board'])
+    has_moved_tuple = tuple(sorted(state['has_moved'].items()))
+    return (board_tuple, state['turn'], has_moved_tuple, state['en_passant_target']) #for 3fold repetition checking
+
 def init_board():
     return [
         [-4, -2, -3, -5, -6, -3, -2, -4],
@@ -665,6 +670,8 @@ loser_team = None
 vinniebot_thread = None
 vinniebot_result = None
 run = True
+position_counts = {}
+position_counts[position_hash(state)] = 1
 def vinniebot_think(state_copy):
     global vinniebot_result
     useless_variable, move = minimax(state_copy, 4, -math.inf, math.inf)
@@ -715,9 +722,13 @@ while run:
                                     rect = img.get_rect(center=get_grid_center(c_idx, current_j))
                                     pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
                         state['turn'] = -state['turn']  # change turn
+                        key = position_hash(state)
+                        position_counts[key] = position_counts.get(key, 0) + 1
                         current_player = white_player if state['turn'] == 1 else black_player
                         # check check/stale mate
-                        if not has_legal_moves(state, state['turn']):
+                        if position_counts.get(position_hash(state), 0) >= 3:
+                            game_over = 'stalemate'
+                        elif not has_legal_moves(state, state['turn']):
                             king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn'] * 6][0]
                             if is_check(state['board'], state['turn'], king_pos):
                                 game_over = 'checkmate'
@@ -839,8 +850,13 @@ while run:
                         if promoting is None:
                             state['turn'] = -state['turn']
 
+                            key = position_hash(state) #3fold checks
+                            position_counts[key] = position_counts.get(key, 0) + 1
+
                             # check check/stale mate
-                            if not has_legal_moves(state, state['turn']):
+                            if position_counts.get(position_hash(state), 0) >= 3:
+                                game_over = 'stalemate'
+                            elif not has_legal_moves(state, state['turn']):
                                 king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn'] * 6][0]
                                 if is_check(state['board'], state['turn'], king_pos):
                                     game_over = 'checkmate'
@@ -871,6 +887,8 @@ while run:
         if vinniebot_result is not None:
             apply_move(state, vinniebot_result[0], vinniebot_result[1], vinniebot_result[2])
             # rebuild pieces
+            key = position_hash(state)
+            position_counts[key] = position_counts.get(key, 0) + 1
             pieces = []
             for r_idx, row in enumerate(state['board']):
                 for c_idx, val in enumerate(row):
@@ -880,7 +898,9 @@ while run:
                         rect = img.get_rect(center=get_grid_center(c_idx, current_j))
                         pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
             # game-over check
-            if not has_legal_moves(state, state['turn']):
+            if position_counts.get(position_hash(state), 0) >= 3:
+                game_over = 'stalemate'
+            elif not has_legal_moves(state, state['turn']):
                 king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn'] * 6][0]
                 if is_check(state['board'], state['turn'], king_pos):
                     game_over = 'checkmate'
