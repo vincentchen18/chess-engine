@@ -981,9 +981,13 @@ while run:
 
         pygame.draw.rect(window, (40, 40, 40), (bar_x, bar_y, bar_width, bar_height))
 
-        if abs(current_eval) > 50000:
-            mate_in = (100000 - (abs(current_eval) % 100000))
-            eval_text = f"{'+M' if current_eval > 0 else '-M'}{mate_in}"
+        if abs(current_eval) > 100000:
+            eval_text = "1-0" if current_eval > 0 else "0-1"
+            eval_pawns = 10 if current_eval > 0 else -10
+        elif abs(current_eval) > 50000:
+            mate_depth = abs(current_eval) - 100000
+            mate_in_moves = max(1, (mate_depth + 1) // 2)
+            eval_text = f"{'+M' if current_eval > 0 else '-M'}{mate_in_moves}"
             eval_pawns = 10 if current_eval > 0 else -10
         else:
             eval_pawns = max(-10, min(10, current_eval / 100))
