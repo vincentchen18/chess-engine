@@ -283,6 +283,41 @@ def apply_move(state, start, end, promote_to=None):
     # flip turn
     state['turn'] = -state['turn']
 
+def insufficient_material(state):
+    board = state['board']
+    white_pieces = []
+    black_pieces = []
+    for r in range(8):
+        for c in range(8):
+            piece = board[r][c]
+            if piece > 0 and piece != 6:  # white non-king
+                white_pieces.append((piece, r, c))
+            elif piece < 0 and piece != -6:  # black non-king
+                black_pieces.append((piece, r, c))
+
+    # any pawn, rook, queen so mate is possible so not over yet
+    for p, _, _ in white_pieces + black_pieces:
+        if abs(p) in (1, 4, 5):
+            return False
+
+    # only minor pieces (knights/bishops) and kings left
+    # K vs K
+    if len(white_pieces) == 0 and len(black_pieces) == 0:
+        return True
+    # K+minor vs K
+    if len(white_pieces) == 1 and len(black_pieces) == 0:
+        return True
+    if len(white_pieces) == 0 and len(black_pieces) == 1:
+        return True
+    # K+B vs K+B with bishops on same color
+    if len(white_pieces) == 1 and len(black_pieces) == 1:
+        wp, wr, wc = white_pieces[0]
+        bp, br, bc = black_pieces[0]
+        if abs(wp) == 3 and abs(bp) == 3:  # both bishops
+            if (wr + wc) % 2 == (br + bc) % 2:  # same color squares
+                return True
+    return False
+
 # ==== me make bot code here ===== #
 piece_values = {1: 100, 2: 320, 3: 330, 4: 500, 5: 920, 6: 20000}
 
@@ -296,10 +331,20 @@ def evaluate(state):
                 score += piece_values[abs(piece)] * (piece//abs(piece))
     return score
 import math
+def order_moves(state, moves):
+    board = state['board']
+    def score(move):
+        start, end, _ = move
+        captured = board[end[0]][end[1]]
+        if captured != 0:
+            attacker = board[start[0]][start[1]]
+            return piece_values[abs(captured)] * 10 - piece_values[abs(attacker)]
+        return 0
+    return sorted(moves, key=score, reverse=True)
 def minimax(state, depth, alpha, beta): #alpha beta prune (like the connect4 engine)
     if depth == 0:
         return evaluate(state), None
-    moves = get_all_moves(state)
+    moves = order_moves(state, get_all_moves(state))
     if not moves:
         king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn']*6][0]
         if is_check(state['board'], state['turn'], king_pos):
@@ -407,42 +452,6 @@ def get_grid_center(i, j):
     y = board_rect.top + board_rect.height // 8 * (7 - j) + board_rect.height // 16
     return x, y
 
-
-def insufficient_material(state):
-    board = state['board']
-    white_pieces = []
-    black_pieces = []
-    for r in range(8):
-        for c in range(8):
-            piece = board[r][c]
-            if piece > 0 and piece != 6:  # white non-king
-                white_pieces.append((piece, r, c))
-            elif piece < 0 and piece != -6:  # black non-king
-                black_pieces.append((piece, r, c))
-
-    # any pawn, rook, queen so mate is possible so not over yet
-    for p, _, _ in white_pieces + black_pieces:
-        if abs(p) in (1, 4, 5):
-            return False
-
-    # only minor pieces (knights/bishops) and kings left
-    # K vs K
-    if len(white_pieces) == 0 and len(black_pieces) == 0:
-        return True
-    # K+minor vs K
-    if len(white_pieces) == 1 and len(black_pieces) == 0:
-        return True
-    if len(white_pieces) == 0 and len(black_pieces) == 1:
-        return True
-    # K+B vs K+B with bishops on same color
-    if len(white_pieces) == 1 and len(black_pieces) == 1:
-        wp, wr, wc = white_pieces[0]
-        bp, br, bc = black_pieces[0]
-        if abs(wp) == 3 and abs(bp) == 3:  # both bishops
-            if (wr + wc) % 2 == (br + bc) % 2:  # same color squares
-                return True
-    return False
-
 state = make_state()
 vinniebot_team = -1
 promoting = None
@@ -503,7 +512,7 @@ while run:
                             else:
                                 game_over = 'stalemate'  # can't move but not in check
                         if game_over is None and state['turn'] == vinniebot_team: #vinniebot's turn
-                            _, ai_move = minimax(state, 3, -math.inf, math.inf)
+                            useless_variable, ai_move = minimax(state, 5, -math.inf, math.inf)
                             if ai_move is not None:
                                 apply_move(state, ai_move[0], ai_move[1], ai_move[2])
                                 pieces = []
@@ -636,7 +645,7 @@ while run:
                                     game_over = 'stalemate' # can't move but not in check
 
                             if game_over is None and state['turn'] == vinniebot_team:
-                                useless_variable, ai_move = minimax(state, 3, -math.inf, math.inf)
+                                useless_variable, ai_move = minimax(state, 5, -math.inf, math.inf)
                                 if ai_move is not None:
                                     apply_move(state, ai_move[0], ai_move[1], ai_move[2])
                                     # rebuild pieces from new board
