@@ -522,9 +522,12 @@ def minimax(state, depth, alpha, beta, counts): #alpha beta prune (like the conn
     else: #black, play move that minimises eval
         min_eval = math.inf
         for move in moves:
-            new_state = clone_state(state)
-            apply_move(new_state, move[0], move[1], move[2])
-            eval_score, _ = minimax(new_state, depth - 1, alpha, beta)
+            newstate = clone_state(state)
+            apply_move(newstate, move[0], move[1], move[2])
+            new_counts = dict(counts)
+            new_key = position_hash(newstate)
+            new_counts[new_key] = new_counts.get(new_key, 0) + 1
+            eval_score, useless_variable = minimax(newstate, depth - 1, alpha, beta, new_counts)
             if eval_score < min_eval:
                 min_eval = eval_score
                 best_move = move
