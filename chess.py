@@ -565,7 +565,7 @@ def show_menu():
         label = small_font.render("White:", True, (240, 240, 240))
         window.blit(label, (20, 165))
 
-        for rect, label, val in [(white_human, "Human", 'human'), (white_bot, "Vinniebot", 'bot')]:
+        for rect, label, val in [(white_human, "Human", 'human'), (white_bot, "Bot", 'bot')]:
             color = (100, 180, 100) if white_choice == val else (80, 80, 100)
             pygame.draw.rect(window, color, rect, border_radius=8)
             text = small_font.render(label, True, (255, 255, 255))
@@ -575,7 +575,7 @@ def show_menu():
         label = small_font.render("Black:", True, (240, 240, 240))
         window.blit(label, (20, 265))
 
-        for rect, label, val in [(black_human, "Human", 'human'), (black_bot, "Vinniebot", 'bot')]:
+        for rect, label, val in [(black_human, "Human", 'human'), (black_bot, "Bot", 'bot')]:
             color = (100, 180, 100) if black_choice == val else (80, 80, 100)
             pygame.draw.rect(window, color, rect, border_radius=8)
             text = small_font.render(label, True, (255, 255, 255))
