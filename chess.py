@@ -283,6 +283,24 @@ def apply_move(state, start, end, promote_to=None):
     # flip turn
     state['turn'] = -state['turn']
 
+# ==== me make bot code here ===== #
+piece_values = {1: 100, 2: 320, 3: 330, 4: 500, 5: 920, 6: 20000}
+
+def evaluate(state):
+    # eval>0 is good for white, eval<0 good for black
+    # basic evaluation that only compares material, will add more stuff like king safety and mobility later
+    score = 0
+    for row in state['board']:
+        for piece in row:
+            if piece != 0:
+                score += piece_values[abs(piece)] * (piece//abs(piece))
+    return score
+
+
+
+
+
+
 def make_red_glow(s): #make a special ring for the loser king
     surf = pygame.Surface((s, s), pygame.SRCALPHA)
     center = (s // 2, s // 2)
