@@ -487,9 +487,11 @@ def quiescence(state, alpha, beta):
 
     return alpha if state['turn'] == 1 else beta
 
-def minimax(state, depth, alpha, beta): #alpha beta prune (like the connect4 engine)
+def minimax(state, depth, alpha, beta, counts): #alpha beta prune (like the connect4 engine)
     if depth == 0:
         return quiescence(state, alpha, beta), None
+    if counts.get(position_hash(state), 0) >= 3:
+        return 0, None
     moves = order_moves(state, get_all_moves(state))
     if not moves:
         king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn']*6][0]
@@ -506,7 +508,10 @@ def minimax(state, depth, alpha, beta): #alpha beta prune (like the connect4 eng
         for move in moves:
             newstate = clone_state(state)
             apply_move(newstate, move[0], move[1], move[2])
-            eval_score, _ = minimax(newstate, depth - 1, alpha, beta)
+            new_counts = dict(counts)
+            new_key = position_hash(newstate)
+            new_counts[new_key] = new_counts.get(new_key, 0) + 1
+            eval_score, useless_variable = minimax(newstate, depth - 1, alpha, beta, new_counts)
             if eval_score > max_eval:
                 max_eval = eval_score
                 best_move = move
@@ -674,7 +679,8 @@ position_counts = {}
 position_counts[position_hash(state)] = 1
 def vinniebot_think(state_copy):
     global vinniebot_result
-    useless_variable, move = minimax(state_copy, 4, -math.inf, math.inf)
+    counts_copy = dict(position_counts)
+    useless_variable, move = minimax(state_copy, 4, -math.inf, math.inf, counts_copy)
     vinniebot_result = move
 
 pieces = []
