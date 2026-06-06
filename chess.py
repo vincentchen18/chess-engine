@@ -570,13 +570,16 @@ def show_menu():
 
     white_choice = 'human'
     black_choice = 'bot'
+    eval_choice = 'on'
 
     # button rects
     white_human = pygame.Rect(80, 150, 150, 50)
     white_bot = pygame.Rect(270, 150, 150, 50)
     black_human = pygame.Rect(80, 250, 150, 50)
     black_bot = pygame.Rect(270, 250, 150, 50)
-    start_btn = pygame.Rect(175, 380, 150, 60)
+    eval_on = pygame.Rect(80, 320, 150, 40)
+    eval_off = pygame.Rect(270, 320, 150, 40)
+    start_btn = pygame.Rect(175, 400, 150, 60)
 
     while True:
         for event in pygame.event.get():
@@ -592,8 +595,12 @@ def show_menu():
                     black_choice = 'human'
                 elif black_bot.collidepoint(event.pos):
                     black_choice = 'bot'
+                elif eval_on.collidepoint(event.pos):
+                    eval_choice = 'on'
+                elif eval_off.collidepoint(event.pos):
+                    eval_choice = 'off'
                 elif start_btn.collidepoint(event.pos):
-                    return white_choice, black_choice
+                    return white_choice, black_choice, eval_choice
 
         window.fill((40, 40, 60))
 
@@ -617,6 +624,16 @@ def show_menu():
 
         for rect, label, val in [(black_human, "Human", 'human'), (black_bot, "Bot", 'bot')]:
             color = (100, 180, 100) if black_choice == val else (80, 80, 100)
+            pygame.draw.rect(window, color, rect, border_radius=8)
+            text = small_font.render(label, True, (255, 255, 255))
+            window.blit(text, text.get_rect(center=rect.center))
+
+        # eval bar
+        label = small_font.render("Eval:", True, (240, 240, 240))
+        window.blit(label, (20, 330))
+
+        for rect, label, val in [(eval_on, "On", 'on'), (eval_off, "Off", 'off')]:
+            color = (100, 180, 100) if eval_choice == val else (80, 80, 100)
             pygame.draw.rect(window, color, rect, border_radius=8)
             text = small_font.render(label, True, (255, 255, 255))
             window.blit(text, text.get_rect(center=rect.center))
@@ -645,13 +662,14 @@ def make_red_glow(s): #make a special ring for the loser king
     return surf
 
 pygame.init()
-window = pygame.display.set_mode((500, 500))
+window = pygame.display.set_mode((540, 500))
 clock = pygame.time.Clock()
 pygame.display.set_caption("Chessboard")
 board_surface = pygame.Surface(window.get_size())
 board_surface.fill((255, 255, 255))
 size = (min(window.get_size()) - 20) // 8
-start_x, start_y = (window.get_width() - size * 8) // 2, (window.get_height() - size * 8) // 2
+start_x = 10
+start_y = (window.get_height() - size * 8) // 2
 board_rect = pygame.Rect(start_x, start_y, size * 8, size * 8)
 
 for y in range(8):
@@ -698,7 +716,7 @@ def get_grid_center(i, j):
 
 import threading # vinniebot thinks too slow >:((((((
 state = make_state()
-white_player,black_player = show_menu()
+white_player,black_player,eval_choice = show_menu()
 promoting = None
 game_over = None
 loser_team = None
@@ -707,12 +725,13 @@ vinniebot_result = None
 run = True
 position_counts = {}
 position_counts[position_hash(state)] = 1
+current_eval = 0
 def vinniebot_think(state_copy):
-    global vinniebot_result
+    global vinniebot_result, current_eval
     counts_copy = dict(position_counts)
-    useless_variable, move = minimax(state_copy, 4, -math.inf, math.inf, counts_copy)
+    evaluation, move = minimax(state_copy, 4, -math.inf, math.inf, counts_copy)
     vinniebot_result = move
-
+    current_eval = evaluation
 pieces = []
 for row_idx, row in enumerate(state['board']):
     for col_idx, val in enumerate(row):
@@ -954,6 +973,32 @@ while run:
             vinniebot_thread.start()
 
     window.blit(board_surface, (0, 0))
+    if eval_choice == 'on':
+        bar_x = start_x + size * 8 + 10
+        bar_y = start_y
+        bar_width = 20
+        bar_height = size * 8
+
+        pygame.draw.rect(window, (40, 40, 40), (bar_x, bar_y, bar_width, bar_height))
+
+        if abs(current_eval) > 50000:
+            mate_in = (100000 - (abs(current_eval) % 100000))
+            eval_text = f"{'+M' if current_eval > 0 else '-M'}{mate_in}"
+            eval_pawns = 10 if current_eval > 0 else -10
+        else:
+            eval_pawns = max(-10, min(10, current_eval / 100))
+            sign = '+' if eval_pawns >= 0 else ''
+            eval_text = f"{sign}{eval_pawns:.1f}"
+
+        white_proportion = (eval_pawns + 10) / 20
+        white_height = int(bar_height * white_proportion)
+        pygame.draw.rect(window, (240, 240, 240),
+                         (bar_x, bar_y + bar_height - white_height, bar_width, white_height))
+
+        eval_font = pygame.font.SysFont(None, 18)
+        text_surf = eval_font.render(eval_text, True, (160, 160, 160))
+        text_rect = text_surf.get_rect(center=(bar_x + bar_width // 2, bar_y + bar_height // 2))
+        window.blit(text_surf, text_rect)
     for piece in pieces:
         if piece['dragging'] and 'legal_moves' in piece:
             for sq in piece['legal_moves']:
