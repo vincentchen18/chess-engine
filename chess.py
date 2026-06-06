@@ -412,10 +412,28 @@ def evaluate(state):
     # eval>0 is good for white, eval<0 good for black
     # basic evaluation that only compares material, will add more stuff like king safety and mobility later
     score = 0
-    for row in state['board']:
+    board = state['board']
+    material = 0
+    for row in board:
         for piece in row:
             if piece != 0:
-                score += piece_values[abs(piece)] * (piece//abs(piece))
+                material += piece_values[abs(piece)]
+    material -= 40000
+    is_endgame = material < 2400
+    for r in range(8):
+        for c in range(8):
+            piece = board[r][c]
+            if piece == 0:
+                continue
+            team = piece // abs(piece)
+            piece_id = abs(piece)
+            score += piece_values[piece_id] * team
+            if piece_id == 6: #king use different pst for opening or endgame
+                pst = king_pst_endgame if is_endgame else king_pst_opening
+            else:
+                pst = pst_tables[piece_id]
+            pst_row = r if team == 1 else 7 - r
+            score += pst[pst_row][c] * team
     return score
 import math
 def order_moves(state, moves):
