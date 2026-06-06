@@ -524,6 +524,69 @@ def minimax(state, depth, alpha, beta): #alpha beta prune (like the connect4 eng
         return min_eval, best_move
 
 
+def show_menu():
+    font = pygame.font.SysFont(None, 40)
+    small_font = pygame.font.SysFont(None, 28)
+
+    white_choice = 'human'
+    black_choice = 'bot'
+
+    # button rects
+    white_human = pygame.Rect(80, 150, 150, 50)
+    white_bot = pygame.Rect(270, 150, 150, 50)
+    black_human = pygame.Rect(80, 250, 150, 50)
+    black_bot = pygame.Rect(270, 250, 150, 50)
+    start_btn = pygame.Rect(175, 380, 150, 60)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if white_human.collidepoint(event.pos):
+                    white_choice = 'human'
+                elif white_bot.collidepoint(event.pos):
+                    white_choice = 'bot'
+                elif black_human.collidepoint(event.pos):
+                    black_choice = 'human'
+                elif black_bot.collidepoint(event.pos):
+                    black_choice = 'bot'
+                elif start_btn.collidepoint(event.pos):
+                    return white_choice, black_choice
+
+        window.fill((40, 40, 60))
+
+        # title
+        title = font.render("Chess Engine", True, (240, 240, 240))
+        window.blit(title, title.get_rect(center=(250, 60)))
+
+        # white row
+        label = small_font.render("White:", True, (240, 240, 240))
+        window.blit(label, (20, 165))
+
+        for rect, label, val in [(white_human, "Human", 'human'), (white_bot, "Vinniebot", 'bot')]:
+            color = (100, 180, 100) if white_choice == val else (80, 80, 100)
+            pygame.draw.rect(window, color, rect, border_radius=8)
+            text = small_font.render(label, True, (255, 255, 255))
+            window.blit(text, text.get_rect(center=rect.center))
+
+        # black row
+        label = small_font.render("Black:", True, (240, 240, 240))
+        window.blit(label, (20, 265))
+
+        for rect, label, val in [(black_human, "Human", 'human'), (black_bot, "Vinniebot", 'bot')]:
+            color = (100, 180, 100) if black_choice == val else (80, 80, 100)
+            pygame.draw.rect(window, color, rect, border_radius=8)
+            text = small_font.render(label, True, (255, 255, 255))
+            window.blit(text, text.get_rect(center=rect.center))
+
+        # start button
+        pygame.draw.rect(window, (180, 140, 60), start_btn, border_radius=8)
+        text = font.render("Start", True, (255, 255, 255))
+        window.blit(text, text.get_rect(center=start_btn.center))
+
+        pygame.display.flip()
 
 
 
@@ -595,7 +658,7 @@ def get_grid_center(i, j):
 
 import threading # vinniebot thinks too slow >:((((((
 state = make_state()
-vinniebot_team = -1
+white_player,black_player = show_menu()
 promoting = None
 game_over = None
 loser_team = None
@@ -652,6 +715,7 @@ while run:
                                     rect = img.get_rect(center=get_grid_center(c_idx, current_j))
                                     pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
                         state['turn'] = -state['turn']  # change turn
+                        current_player = white_player if state['turn'] == 1 else black_player
                         # check check/stale mate
                         if not has_legal_moves(state, state['turn']):
                             king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn'] * 6][0]
@@ -660,7 +724,8 @@ while run:
                                 loser_team = state['turn']  # they can't move AND are in check
                             else:
                                 game_over = 'stalemate'  # can't move but not in check
-                        if game_over is None and state['turn'] == vinniebot_team: #vinniebot's turn
+                        current_player = white_player if state['turn'] == 1 else black_player
+                        if game_over is None and current_player == 'bot': #vinniebot's turn
                             if vinniebot_thread is None:
                                 vinniebot_result = None
                                 state_copy = clone_state(state)
@@ -678,6 +743,9 @@ while run:
                         piece.pop('start_center', None)
                         break
             elif event.button == 1:
+                current_player = white_player if state['turn'] == 1 else black_player
+                if current_player == 'bot':
+                    break
                 for piece in reversed(pieces):
                     if piece['rect'].collidepoint(event.pos):
                         piece_team = 1 if piece['value'] > 0 else -1
@@ -779,8 +847,8 @@ while run:
                                     loser_team = state['turn']  # they can't move and are in check
                                 else:
                                     game_over = 'stalemate' # can't move but not in check
-
-                            if game_over is None and state['turn'] == vinniebot_team:
+                            current_player = white_player if state['turn'] == 1 else black_player
+                            if game_over is None and current_player == 'bot':
                                 if vinniebot_thread is None:
                                     vinniebot_result = None
                                     state_copy = clone_state(state)
@@ -821,6 +889,13 @@ while run:
                     game_over = 'stalemate'
         vinniebot_thread = None
         vinniebot_result = None
+    if (game_over is None and promoting is None and vinniebot_thread is None):
+        current_player = white_player if state['turn'] == 1 else black_player
+        if current_player == 'bot':
+            vinniebot_result = None
+            state_copy = clone_state(state)
+            vinniebot_thread = threading.Thread(target=vinniebot_think, args=(state_copy,))
+            vinniebot_thread.start()
 
     window.blit(board_surface, (0, 0))
     for piece in pieces:
