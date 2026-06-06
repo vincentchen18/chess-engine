@@ -446,9 +446,45 @@ def order_moves(state, moves):
             return piece_values[abs(captured)] * 10 - piece_values[abs(attacker)]
         return 0
     return sorted(moves, key=score, reverse=True)
+
+def quiescence(state, alpha, beta):
+    curr_eval = evaluate(state)
+    if state['turn'] == 1: # mini-minimax
+        if curr_eval >= beta:
+            return beta
+        if curr_eval > alpha:
+            alpha = curr_eval
+    else:
+        if curr_eval <= alpha:
+            return alpha
+        if curr_eval < beta:
+            beta = curr_eval
+    board = state['board']
+    moves = get_all_moves(state)
+    captures = [m for m in moves if board[m[1][0]][m[1][1]] != 0]
+    captures = order_moves(state, captures)
+
+    for move in captures:
+        new_state = clone_state(state)
+        apply_move(new_state, move[0], move[1], move[2])
+        score = quiescence(new_state, alpha, beta)
+
+        if state['turn'] == 1:
+            if score >= beta:
+                return beta
+            if score > alpha:
+                alpha = score
+        else:
+            if score <= alpha:
+                return alpha
+            if score < beta:
+                beta = score
+
+    return alpha if state['turn'] == 1 else beta
+
 def minimax(state, depth, alpha, beta): #alpha beta prune (like the connect4 engine)
     if depth == 0:
-        return evaluate(state), None
+        return quiescence(state, alpha, beta), None
     moves = order_moves(state, get_all_moves(state))
     if not moves:
         king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn']*6][0]
@@ -568,7 +604,7 @@ vinniebot_result = None
 run = True
 def vinniebot_think(state_copy):
     global vinniebot_result
-    useless_variable, move = minimax(state_copy, 5, -math.inf, math.inf)
+    useless_variable, move = minimax(state_copy, 4, -math.inf, math.inf)
     vinniebot_result = move
 
 pieces = []
