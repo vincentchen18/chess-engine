@@ -295,7 +295,47 @@ def evaluate(state):
             if piece != 0:
                 score += piece_values[abs(piece)] * (piece//abs(piece))
     return score
+import math
+def minimax(state, depth, alpha, beta): #alpha beta prune (like the connect4 engine)
+    if depth == 0:
+        return evaluate(state), None
+    moves = get_all_moves(state)
+    if not moves:
+        king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn']*6]
+        if is_check(state['board'], state['turn'], king_pos):
+            return (-100000 - depth) * state['turn'], None # checkmate, subtract depth so bot prefers faster mates
+        else:
+            return 0, None
+    if insufficient_material(state):
+        return 0, None
 
+    best_move = None
+    if state['turn'] == 1: #white, play move that maximises eval
+        max_eval = float('-inf')
+        for move in moves:
+            newstate = clone_state(state)
+            apply_move(newstate, move[0], move[1], move[2])
+            eval_score, _ = minimax(newstate, depth - 1, alpha, beta)
+            if eval_score > max_eval:
+                max_eval = eval_score
+                best_move = move
+            alpha = max(alpha, max_eval)
+            if beta <= alpha:
+                break
+        return max_eval, best_move
+    else: #black, play move that minimises eval
+        min_eval = math.inf
+        for move in moves:
+            new_state = clone_state(state)
+            apply_move(new_state, move[0], move[1], move[2])
+            eval_score, _ = minimax(new_state, depth - 1, alpha, beta)
+            if eval_score < min_eval:
+                min_eval = eval_score
+                best_move = move
+            beta = min(beta, min_eval)
+            if beta <= alpha:
+                break
+        return min_eval, best_move
 
 
 
