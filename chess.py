@@ -301,7 +301,7 @@ def minimax(state, depth, alpha, beta): #alpha beta prune (like the connect4 eng
         return evaluate(state), None
     moves = get_all_moves(state)
     if not moves:
-        king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn']*6]
+        king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn']*6][0]
         if is_check(state['board'], state['turn'], king_pos):
             return (-100000 - depth) * state['turn'], None # checkmate, subtract depth so bot prefers faster mates
         else:
@@ -444,6 +444,7 @@ def insufficient_material(state):
     return False
 
 state = make_state()
+vinniebot_team = -1
 promoting = None
 game_over = None
 loser_team = None
@@ -501,6 +502,25 @@ while run:
                                 loser_team = state['turn']  # they can't move AND are in check
                             else:
                                 game_over = 'stalemate'  # can't move but not in check
+                        if game_over is None and state['turn'] == vinniebot_team: #vinniebot's turn
+                            _, ai_move = minimax(state, 3, -math.inf, math.inf)
+                            if ai_move is not None:
+                                apply_move(state, ai_move[0], ai_move[1], ai_move[2])
+                                pieces = []
+                                for r_idx, row in enumerate(state['board']):
+                                    for c_idx, val in enumerate(row):
+                                        if val != 0:
+                                            current_j = 7 - r_idx
+                                            img = images[val]
+                                            rect = img.get_rect(center=get_grid_center(c_idx, current_j))
+                                            pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
+                                if not has_legal_moves(state, state['turn']):
+                                    king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn'] * 6][0]
+                                    if is_check(state['board'], state['turn'], king_pos):
+                                        game_over = 'checkmate'
+                                        loser_team = state['turn']
+                                    else:
+                                        game_over = 'stalemate'
                         break
                 continue
 
@@ -614,6 +634,29 @@ while run:
                                     loser_team = state['turn']  # they can't move AND are in check
                                 else:
                                     game_over = 'stalemate' # can't move but not in check
+
+                            if game_over is None and state['turn'] == vinniebot_team:
+                                useless_variable, ai_move = minimax(state, 3, -math.inf, math.inf)
+                                if ai_move is not None:
+                                    apply_move(state, ai_move[0], ai_move[1], ai_move[2])
+                                    # rebuild pieces from new board
+                                    pieces = []
+                                    for r_idx, row in enumerate(state['board']):
+                                        for c_idx, val in enumerate(row):
+                                            if val != 0:
+                                                current_j = 7 - r_idx
+                                                img = images[val]
+                                                rect = img.get_rect(center=get_grid_center(c_idx, current_j))
+                                                pieces.append(
+                                                    {'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
+                                    if not has_legal_moves(state, state['turn']):
+                                        king_pos = [(r, c) for r in range(8) for c in range(8) if
+                                                    state['board'][r][c] == state['turn'] * 6][0]
+                                        if is_check(state['board'], state['turn'], king_pos):
+                                            game_over = 'checkmate'
+                                            loser_team = state['turn']
+                                        else:
+                                            game_over = 'stalemate' #check game over after vinniebot's turn
                     else:
                         # illegal return to position
                         if start_center is not None:
