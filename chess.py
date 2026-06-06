@@ -25,15 +25,27 @@ def position_hash(state):
 
 def init_board():
     return [
-        [-4, -2, -3, -5, -6, -3, -2, -4],
-        [-1, -1, -1, -1, -1, -1, -1, -1],
+        [ 0,  0,  0,  0, -6,  0,  0,  0],
         [ 0,  0,  0,  0,  0,  0,  0,  0],
         [ 0,  0,  0,  0,  0,  0,  0,  0],
         [ 0,  0,  0,  0,  0,  0,  0,  0],
         [ 0,  0,  0,  0,  0,  0,  0,  0],
-        [ 1,  1,  1,  1,  1,  1,  1,  1],
-        [ 4,  2,  3,  5,  6,  3,  2,  4],
+        [ 0,  0,  0,  0,  0,  0,  0,  0],
+        [ 0,  0,  0,  0,  0,  0,  0,  0],
+        [ 0,  0,  0,  5,  6,  0,  0,  0],
     ]
+#    return [
+#        [-4, -2, -3, -5, -6, -3, -2, -4],
+#        [-1, -1, -1, -1, -1, -1, -1, -1],
+#        [ 0,  0,  0,  0,  0,  0,  0,  0],
+#        [ 0,  0,  0,  0,  0,  0,  0,  0],
+#        [ 0,  0,  0,  0,  0,  0,  0,  0],
+#        [ 0,  0,  0,  0,  0,  0,  0,  0],
+#        [ 1,  1,  1,  1,  1,  1,  1,  1],
+#        [ 4,  2,  3,  5,  6,  3,  2,  4],
+#    ]
+
+
 
 def go(board, dirs, team, square): #dir is list of direction tuples, team is 1 or -1, square is tuple of 2 ints
     possibles = []
@@ -682,8 +694,20 @@ position_counts = {}
 position_counts[position_hash(state)] = 1
 def vinniebot_think(state_copy):
     global vinniebot_result
+    material = 0
+    for row in state_copy['board']:
+        for piece in row:
+            if piece != 0 and abs(piece) != 6:
+                material += piece_values[abs(piece)]
+
+    if material < 1500:  # deep endgame
+        depth = 6
+    elif material < 2400:  # endgame
+        depth = 5
+    else:
+        depth = 4
     counts_copy = dict(position_counts)
-    useless_variable, move = minimax(state_copy, 4, -math.inf, math.inf, counts_copy)
+    useless_variable, move = minimax(state_copy, depth, -math.inf, math.inf, counts_copy)
     vinniebot_result = move
 
 pieces = []
