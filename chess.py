@@ -404,14 +404,14 @@ king_pst_opening = [
 ]
 
 king_pst_endgame = [
-    [-50, -40, -30, -20, -20, -30, -40, -50],
-    [-30, -20, -10,   0,   0, -10, -20, -30],
-    [-30, -10,  20,  30,  30,  20, -10, -30],
-    [-30, -10,  30,  40,  40,  30, -10, -30],
-    [-30, -10,  30,  40,  40,  30, -10, -30],
-    [-30, -10,  20,  30,  30,  20, -10, -30],
-    [-30, -30,   0,   0,   0,   0, -30, -30],
-    [-50, -30, -30, -30, -30, -30, -30, -50],
+    [-20, -10, -10, -10, -10, -10, -10, -20],
+    [-10,   5,  15,  10,  10,  15,   5, -10],
+    [-10,  10,  20,  30,  30,  20,  10, -10],
+    [-10,  10,  30,  40,  40,  30,  10, -10],
+    [-10,  10,  30,  40,  40,  30,  10, -10],
+    [-10,  10,  20,  30,  30,  20,  10, -10],
+    [-10,   5,  15,  10,  10,  10,  5,  -10],
+    [-20, -10, -10, -10, -10, -10, -10, -20],
 ]
 
 pst_tables = {
@@ -451,6 +451,30 @@ def evaluate(state):
                 pst = pst_tables[piece_id]
             pst_row = r if team == 1 else 7 - r
             score += pst[pst_row][c] * team
+    white_material = sum(piece_values[abs(p)] for row in board for p in row if p > 0 and p != 6)
+    black_material = sum(piece_values[abs(p)] for row in board for p in row if p < 0 and p != -6)
+
+    # add a "drive enemy king to corner" bonus
+    if black_material == 0 and white_material >= 500:  # white winning K+Q+ vs K
+        black_king_pos = next((r, c) for r in range(8) for c in range(8) if board[r][c] == -6)
+        # bonus for enemy king being near corner/edge
+        edge_distance = min(black_king_pos[0], 7 - black_king_pos[0], black_king_pos[1], 7 - black_king_pos[1])
+        score += (4 - edge_distance) * 30
+
+        # bonus for our king being close to enemy king
+        white_king_pos = next((r, c) for r in range(8) for c in range(8) if board[r][c] == 6)
+        king_distance = max(abs(white_king_pos[0] - black_king_pos[0]), abs(white_king_pos[1] - black_king_pos[1]))
+        score += (7 - king_distance) * 10  # closer = better
+
+    if white_material == 0 and black_material >= 500:  # black winning K+Q+ vs K
+        white_king_pos = next((r, c) for r in range(8) for c in range(8) if board[r][c] == 6)
+        edge_distance = min(white_king_pos[0], 7 - white_king_pos[0], white_king_pos[1], 7 - white_king_pos[1])
+        score -= (4 - edge_distance) * 30
+
+        black_king_pos = next((r, c) for r in range(8) for c in range(8) if board[r][c] == -6)
+        king_distance = max(abs(white_king_pos[0] - black_king_pos[0]), abs(white_king_pos[1] - black_king_pos[1]))
+        score -= (7 - king_distance) * 10
+
     return score
 import math
 def order_moves(state, moves):
@@ -694,20 +718,8 @@ position_counts = {}
 position_counts[position_hash(state)] = 1
 def vinniebot_think(state_copy):
     global vinniebot_result
-    material = 0
-    for row in state_copy['board']:
-        for piece in row:
-            if piece != 0 and abs(piece) != 6:
-                material += piece_values[abs(piece)]
-
-    if material < 1500:  # deep endgame
-        depth = 6
-    elif material < 2400:  # endgame
-        depth = 5
-    else:
-        depth = 4
     counts_copy = dict(position_counts)
-    useless_variable, move = minimax(state_copy, depth, -math.inf, math.inf, counts_copy)
+    useless_variable, move = minimax(state_copy, 4, -math.inf, math.inf, counts_copy)
     vinniebot_result = move
 
 pieces = []
