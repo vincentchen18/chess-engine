@@ -452,13 +452,19 @@ def get_grid_center(i, j):
     y = board_rect.top + board_rect.height // 8 * (7 - j) + board_rect.height // 16
     return x, y
 
+import threading # vinniebot thinks too slow >:((((((
 state = make_state()
 vinniebot_team = -1
 promoting = None
 game_over = None
 loser_team = None
-
+vinniebot_thread = None
+vinniebot_result = None
 run = True
+def vinniebot_think(state_copy):
+    global vinniebot_result
+    useless_variable, move = minimax(state_copy, 5, -math.inf, math.inf)
+    vinniebot_result = move
 
 pieces = []
 for row_idx, row in enumerate(state['board']):
@@ -476,10 +482,12 @@ while run:
     for event in event_list:
         if event.type == pygame.QUIT:
             run = False
-
+        if vinniebot_thread is not None:
+            continue
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if game_over:
                 continue
+
             if promoting is not None and event.button == 1:
                 square = promoting['square']
                 team = promoting['team']
@@ -512,24 +520,11 @@ while run:
                             else:
                                 game_over = 'stalemate'  # can't move but not in check
                         if game_over is None and state['turn'] == vinniebot_team: #vinniebot's turn
-                            useless_variable, ai_move = minimax(state, 5, -math.inf, math.inf)
-                            if ai_move is not None:
-                                apply_move(state, ai_move[0], ai_move[1], ai_move[2])
-                                pieces = []
-                                for r_idx, row in enumerate(state['board']):
-                                    for c_idx, val in enumerate(row):
-                                        if val != 0:
-                                            current_j = 7 - r_idx
-                                            img = images[val]
-                                            rect = img.get_rect(center=get_grid_center(c_idx, current_j))
-                                            pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
-                                if not has_legal_moves(state, state['turn']):
-                                    king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn'] * 6][0]
-                                    if is_check(state['board'], state['turn'], king_pos):
-                                        game_over = 'checkmate'
-                                        loser_team = state['turn']
-                                    else:
-                                        game_over = 'stalemate'
+                            if vinniebot_thread is None:
+                                vinniebot_result = None
+                                state_copy = clone_state(state)
+                                vinniebot_thread = threading.Thread(target=vinniebot_think, args=(state_copy,))
+                                vinniebot_thread.start()
                         break
                 continue
 
@@ -640,32 +635,16 @@ while run:
                                 king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn'] * 6][0]
                                 if is_check(state['board'], state['turn'], king_pos):
                                     game_over = 'checkmate'
-                                    loser_team = state['turn']  # they can't move AND are in check
+                                    loser_team = state['turn']  # they can't move and are in check
                                 else:
                                     game_over = 'stalemate' # can't move but not in check
 
                             if game_over is None and state['turn'] == vinniebot_team:
-                                useless_variable, ai_move = minimax(state, 5, -math.inf, math.inf)
-                                if ai_move is not None:
-                                    apply_move(state, ai_move[0], ai_move[1], ai_move[2])
-                                    # rebuild pieces from new board
-                                    pieces = []
-                                    for r_idx, row in enumerate(state['board']):
-                                        for c_idx, val in enumerate(row):
-                                            if val != 0:
-                                                current_j = 7 - r_idx
-                                                img = images[val]
-                                                rect = img.get_rect(center=get_grid_center(c_idx, current_j))
-                                                pieces.append(
-                                                    {'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
-                                    if not has_legal_moves(state, state['turn']):
-                                        king_pos = [(r, c) for r in range(8) for c in range(8) if
-                                                    state['board'][r][c] == state['turn'] * 6][0]
-                                        if is_check(state['board'], state['turn'], king_pos):
-                                            game_over = 'checkmate'
-                                            loser_team = state['turn']
-                                        else:
-                                            game_over = 'stalemate' #check game over after vinniebot's turn
+                                if vinniebot_thread is None:
+                                    vinniebot_result = None
+                                    state_copy = clone_state(state)
+                                    vinniebot_thread = threading.Thread(target=vinniebot_think, args=(state_copy,))
+                                    vinniebot_thread.start()
                     else:
                         # illegal return to position
                         if start_center is not None:
@@ -679,6 +658,28 @@ while run:
                 if piece['dragging']:
                     piece['rect'].x = event.pos[0] - piece['rel_pos'][0]
                     piece['rect'].y = event.pos[1] - piece['rel_pos'][1]
+    if vinniebot_thread is not None and not vinniebot_thread.is_alive():
+        if vinniebot_result is not None:
+            apply_move(state, vinniebot_result[0], vinniebot_result[1], vinniebot_result[2])
+            # rebuild pieces
+            pieces = []
+            for r_idx, row in enumerate(state['board']):
+                for c_idx, val in enumerate(row):
+                    if val != 0:
+                        current_j = 7 - r_idx
+                        img = images[val]
+                        rect = img.get_rect(center=get_grid_center(c_idx, current_j))
+                        pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
+            # game-over check
+            if not has_legal_moves(state, state['turn']):
+                king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn'] * 6][0]
+                if is_check(state['board'], state['turn'], king_pos):
+                    game_over = 'checkmate'
+                    loser_team = state['turn']
+                else:
+                    game_over = 'stalemate'
+        vinniebot_thread = None
+        vinniebot_result = None
 
     window.blit(board_surface, (0, 0))
     for piece in pieces:
