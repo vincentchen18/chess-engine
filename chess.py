@@ -291,6 +291,66 @@ def apply_move(state, start, end, promote_to=None):
     # flip turn
     state['turn'] = -state['turn']
 
+import random
+def board_key(state):
+    return tuple(tuple(row) for row in state['board']) + (state['turn'],)
+def build_opening_book():
+    book = {}
+    s = make_state()
+    book[board_key(s)] = [((6, 4), (4, 4), None), ((6, 3), (4, 3), None), ((7, 6), (5, 5), None), ((6, 2), (4, 2), None)]
+    apply_move(s, (6, 4), (4, 4)) #pawn to e4
+    book[board_key(s)] = [((1,4), (3,4), None), ((1, 2), (3, 2), None), ((1, 4), (2, 4), None),((1, 2), (2, 2), None),((1, 3), (3, 3), None)] # e5, c5, e6, c6, d5
+    s = make_state()
+    apply_move(s, (6, 3), (4, 3)) #pawn to d4
+    book[board_key(s)] = [((1, 3), (3, 3), None),  ((0, 6), (2, 5), None), ((1, 5), (3, 5), None)] #d5, Nf6, f5
+    # After 1.Nf3
+    s = make_state()
+    apply_move(s, (7, 6), (5, 5))
+    # d5, Nf6, c5
+    book[board_key(s)] = [((1, 3), (3, 3), None), ((0, 6), (2, 5), None), ((1, 2), (3, 2), None)]
+    # After 1.c4
+    s = make_state()
+    apply_move(s, (6, 2), (4, 2))
+    # e5, Nf6, c5
+    book[board_key(s)] = [((1, 4), (3, 4), None), ((0, 6), (2, 5), None), ((1, 2), (3, 2), None)]
+    # 1.e4 e5
+    s = make_state()
+    apply_move(s, (6, 4), (4, 4))
+    apply_move(s, (1, 4), (3, 4))
+    # Nf3, Nc3
+    book[board_key(s)] = [((7, 6), (5, 5), None), ((7, 1), (5, 2), None)]
+    # 1.e4 e5 2.Nf3
+    s = make_state()
+    apply_move(s, (6, 4), (4, 4))
+    apply_move(s, (1, 4), (3, 4))
+    apply_move(s, (7, 6), (5, 5))
+    book[board_key(s)] = [((0, 1), (2, 2), None), ((0, 6), (2, 5), None)] #Nc6, Nf6
+    # e4 e5 2.Nf3 Nc6
+    s = make_state()
+    apply_move(s, (6, 4), (4, 4))
+    apply_move(s, (1, 4), (3, 4))
+    apply_move(s, (7, 6), (5, 5))
+    apply_move(s, (0, 1), (2, 2))
+    # Bb5, Bc4, d4
+    book[board_key(s)] = [((7, 5), (3, 1), None), ((7, 5), (4, 2), None), ((6, 3), (4, 3), None)]
+    # d4 d5
+    s = make_state()
+    apply_move(s, (6, 3), (4, 3))
+    apply_move(s, (1, 3), (3, 3))
+    book[board_key(s)] = [((6, 2), (4, 2), None), ((7, 6), (5, 5), None)] # c4, Nf3
+    # d4 Nf6
+    s = make_state()
+    apply_move(s, (6, 3), (4, 3))
+    apply_move(s, (0, 6), (2, 5))
+    # c4, Nf3
+    book[board_key(s)] = [((6, 2), (4, 2), None), ((7, 6), (5, 5), None)]
+    # e4 c5
+    s = make_state()
+    apply_move(s, (6, 4), (4, 4))
+    apply_move(s, (1, 2), (3, 2))
+    book[board_key(s)] = [((7, 6), (5, 5), None), ((7, 1), (5, 2), None)]    # Nf3, Nc3
+    return book
+
 def insufficient_material(state):
     board = state['board']
     white_pieces = []
@@ -726,8 +786,17 @@ run = True
 position_counts = {}
 position_counts[position_hash(state)] = 1
 current_eval = 0
+
+opening_book = build_opening_book()
 def vinniebot_think(state_copy):
     global vinniebot_result, current_eval
+    # try opening book first
+    key = board_key(state_copy)
+    if key in opening_book:
+        vinniebot_result = random.choice(opening_book[key])
+        current_eval = 0  # book moves don't have eval scores
+        return
+    # otherwise minimax
     counts_copy = dict(position_counts)
     evaluation, move = minimax(state_copy, 4, -math.inf, math.inf, counts_copy)
     vinniebot_result = move
