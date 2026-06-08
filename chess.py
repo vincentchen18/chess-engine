@@ -1,3 +1,4 @@
+import sys
 def make_state():
     return {
         'board': init_board(),
@@ -645,7 +646,7 @@ def show_menu():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                exit()
+                sys.exit(0)
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if white_human.collidepoint(event.pos):
                     white_choice = 'human'
@@ -1139,4 +1140,4 @@ while run:
     pygame.display.flip()
 
 pygame.quit()
-exit()
+sys.exit(0)
