@@ -293,8 +293,21 @@ def apply_move(state, start, end, promote_to=None):
     state['turn'] = -state['turn']
 
 import random
+def c(coord):
+    return (int(c[1])-1, ord(coord[0]-ord('a')))
 def board_key(state):
     return tuple(tuple(row) for row in state['board']) + (state['turn'],)
+def lineadder(listOfCoords, book):
+    opening_state = make_state()
+    for coord in listOfCoords:
+        key = board_key(opening_state)
+        if key in book.keys():
+            book[key].append(coord)
+        else:
+            book[key] = [coord]
+        apply_move(opening_state, coord[0], coord[1])
+    return book
+
 def build_opening_book():
     book = {}
     s = make_state()
