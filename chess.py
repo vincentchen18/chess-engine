@@ -318,39 +318,25 @@ def build_opening_book():
                       f(("c2", "c3")), f(("g8", "f6")),
                       f(("d2", "d4")), f(("e5", "d4")),
                       f(("c3", "d4")), f(("c5", "b4")),
-                      f(("b1", "c3")), f(("f6", "e4"))], book)
-    book[board_key(s)] = [((1,4), (3,4), None), ((1, 2), (3, 2), None), ((1, 4), (2, 4), None),((1, 2), (2, 2), None),((1, 3), (3, 3), None)] # e5, c5, e6, c6, d5
-    s = make_state()
-    apply_move(s, (6, 3), (4, 3)) #pawn to d4
-    book[board_key(s)] = [((1, 3), (3, 3), None),  ((0, 6), (2, 5), None), ((1, 5), (3, 5), None)] #d5, Nf6, f5
-    # After 1.Nf3
-    s = make_state()
-    apply_move(s, (7, 6), (5, 5))
-    # d5, Nf6, c5
-    book[board_key(s)] = [((1, 3), (3, 3), None), ((0, 6), (2, 5), None), ((1, 2), (3, 2), None)]
-    # After 1.c4
-    s = make_state()
-    apply_move(s, (6, 2), (4, 2))
-    # e5, Nf6, c5
-    book[board_key(s)] = [((1, 4), (3, 4), None), ((0, 6), (2, 5), None), ((1, 2), (3, 2), None)]
-    # Nf3, Nc3
-    book[board_key(s)].extend([((7, 6), (5, 5), None), ((7, 1), (5, 2), None)])
-    # d4 d5
-    s = make_state()
-    apply_move(s, (6, 3), (4, 3))
-    apply_move(s, (1, 3), (3, 3))
-    book[board_key(s)] = [((6, 2), (4, 2), None), ((7, 6), (5, 5), None)] # c4, Nf3
-    # d4 Nf6
-    s = make_state()
-    apply_move(s, (6, 3), (4, 3))
-    apply_move(s, (0, 6), (2, 5))
-    # c4, Nf3
-    book[board_key(s)] = [((6, 2), (4, 2), None), ((7, 6), (5, 5), None)]
-    # e4 c5
-    s = make_state()
-    apply_move(s, (6, 4), (4, 4))
-    apply_move(s, (1, 2), (3, 2))
-    book[board_key(s)] = [((7, 6), (5, 5), None), ((7, 1), (5, 2), None)]    # Nf3, Nc3
+                      f(("b1", "c3")), f(("f6", "e4"))], book) # giuoco piano
+    book = lineadder([f(("e2", "e4")), f(("e7", "e5")),
+                      f(("g1", "f3")), f(("b8", "c6")),
+                      f(("f1", "b5")), f(("a7", "a6")),
+                      f(("b5", "a4")), f(("g8", "f6")),
+                      f(("e1", "g1")), f(("f1", "e1"))], book) # ruy lopez
+    book = lineadder([f(("e2", "e4")), f(("e7", "e5")),
+                      f(("b1", "c3")), f(("g8", "f6")),
+                      f(("f2", "f4")), f(("d7", "d5")),
+                      f(("f4", "e5")), f(("f6", "e4")),
+                      f(("d1", "f3")), f(("b8", "c6"))], book) #vienna gambit
+    book = lineadder([f(("e2", "e4")), f(("e7", "e5")),
+                      f(("g1", "f3")), f(("g8", "f6")),
+                      f(("f3", "e5")), f(("b8", "c6")),
+                      f(("e5", "c6")), f(("d7", "c6"))], book) #need to figure out a way to build a biased opening theory, but this is stafford gambit
+    book = lineadder([f(("e2", "e4")), f(("e7", "e5")),
+                      f(("g1", "f3")), f(("b8", "c6")),
+                      f(("f1", "c4")), f(("g8", "f6")),
+                      ], book)
     return book
 
 def insufficient_material(state):
