@@ -294,7 +294,7 @@ def apply_move(state, start, end, promote_to=None):
 
 import random
 def c(coord):
-    return (int(c[1])-1, ord(coord[0]-ord('a')))
+    return (8-int(coord[1]), ord(coord[0])-ord('a'))
 def board_key(state):
     return tuple(tuple(row) for row in state['board']) + (state['turn'],)
 def lineadder(listOfCoords, book):
@@ -307,12 +307,13 @@ def lineadder(listOfCoords, book):
             book[key] = [coord]
         apply_move(opening_state, coord[0], coord[1])
     return book
-
+def f(x): #format coords
+    return (c(x[0]), c(x[1]), None)
 def build_opening_book():
     book = {}
     s = make_state()
-    book[board_key(s)] = [((6, 4), (4, 4), None), ((6, 3), (4, 3), None), ((7, 6), (5, 5), None), ((6, 2), (4, 2), None)]
-    apply_move(s, (6, 4), (4, 4)) #pawn to e4
+    book = lineadder([f(("e2", "e4")), f(("e7","e5")),f(("g1","f3")),f(("b8","c6"))], book)
+    print(book)
     book[board_key(s)] = [((1,4), (3,4), None), ((1, 2), (3, 2), None), ((1, 4), (2, 4), None),((1, 2), (2, 2), None),((1, 3), (3, 3), None)] # e5, c5, e6, c6, d5
     s = make_state()
     apply_move(s, (6, 3), (4, 3)) #pawn to d4
@@ -327,26 +328,8 @@ def build_opening_book():
     apply_move(s, (6, 2), (4, 2))
     # e5, Nf6, c5
     book[board_key(s)] = [((1, 4), (3, 4), None), ((0, 6), (2, 5), None), ((1, 2), (3, 2), None)]
-    # 1.e4 e5
-    s = make_state()
-    apply_move(s, (6, 4), (4, 4))
-    apply_move(s, (1, 4), (3, 4))
     # Nf3, Nc3
-    book[board_key(s)] = [((7, 6), (5, 5), None), ((7, 1), (5, 2), None)]
-    # 1.e4 e5 2.Nf3
-    s = make_state()
-    apply_move(s, (6, 4), (4, 4))
-    apply_move(s, (1, 4), (3, 4))
-    apply_move(s, (7, 6), (5, 5))
-    book[board_key(s)] = [((0, 1), (2, 2), None), ((0, 6), (2, 5), None)] #Nc6, Nf6
-    # e4 e5 2.Nf3 Nc6
-    s = make_state()
-    apply_move(s, (6, 4), (4, 4))
-    apply_move(s, (1, 4), (3, 4))
-    apply_move(s, (7, 6), (5, 5))
-    apply_move(s, (0, 1), (2, 2))
-    # Bb5, Bc4, d4
-    book[board_key(s)] = [((7, 5), (3, 1), None), ((7, 5), (4, 2), None), ((6, 3), (4, 3), None)]
+    book[board_key(s)].extend([((7, 6), (5, 5), None), ((7, 1), (5, 2), None)])
     # d4 d5
     s = make_state()
     apply_move(s, (6, 3), (4, 3))
