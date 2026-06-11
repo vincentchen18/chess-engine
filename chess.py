@@ -312,8 +312,13 @@ def f(x): #format coords
 def build_opening_book():
     book = {}
     s = make_state()
-    book = lineadder([f(("e2", "e4")), f(("e7","e5")),f(("g1","f3")),f(("b8","c6"))], book)
-    print(book)
+    book = lineadder([f(("e2", "e4")), f(("e7","e5")),
+                      f(("g1", "f3")), f(("b8", "c6")),
+                      f(("f1", "c4")), f(("f8", "c5")),
+                      f(("c2", "c3")), f(("g8", "f6")),
+                      f(("d2", "d4")), f(("e5", "d4")),
+                      f(("c3", "d4")), f(("c5", "b4")),
+                      f(("b1", "c3")), f(("f6", "e4"))], book)
     book[board_key(s)] = [((1,4), (3,4), None), ((1, 2), (3, 2), None), ((1, 4), (2, 4), None),((1, 2), (2, 2), None),((1, 3), (3, 3), None)] # e5, c5, e6, c6, d5
     s = make_state()
     apply_move(s, (6, 3), (4, 3)) #pawn to d4
