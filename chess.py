@@ -336,7 +336,11 @@ def build_opening_book():
     book = lineadder([f(("e2", "e4")), f(("e7", "e5")),
                       f(("g1", "f3")), f(("b8", "c6")),
                       f(("f1", "c4")), f(("g8", "f6")),
-                      ], book)
+                      f(("f3", "g5")), f(("d7", "d5")),
+                      f(("e4", "d5")), f(("c6", "a5")),
+                      f(("c4", "b5")), f(("c7", "c6")),
+                      f(("d5", "c6")), f(("b7", "c6")),
+                      f(("b5", "d3"))], book) #fried liver atack
     book = lineadder([f(("e2", "e4")), f(("e7", "e6")),
                       f(('d2', 'd4')), f(('d7', 'd5')),
                       f(('e4', 'e5')), f(('c7', 'c5')),
@@ -349,6 +353,11 @@ def build_opening_book():
                       f(("d2", "d4")), f(("c5", "d4")),
                       f(("f3", "d4")), f(("g8", "f6")),
                       f(("b1", "c3")), f(("e7", "e6"))], book) # open sicilian defense with e6
+    book = lineadder([f(("d2", "d4")), f(("d7", "d5")),
+                      f(('b1', 'c3')), f(('g8', 'f6')),
+                      f(("c1", "f4")), f(("c7", "c6"))], book) # jobava london
+
+
     return book
 
 def insufficient_material(state):
