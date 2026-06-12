@@ -301,9 +301,9 @@ def lineadder(listOfCoords, book):
     opening_state = make_state()
     for coord in listOfCoords:
         key = board_key(opening_state)
-        if key in book.keys():
+        if key in book.keys() and coord not in book[key]:
             book[key].append(coord)
-        else:
+        elif key not in book.keys():
             book[key] = [coord]
         apply_move(opening_state, coord[0], coord[1])
     return book
@@ -337,6 +337,18 @@ def build_opening_book():
                       f(("g1", "f3")), f(("b8", "c6")),
                       f(("f1", "c4")), f(("g8", "f6")),
                       ], book)
+    book = lineadder([f(("e2", "e4")), f(("e7", "e6")),
+                      f(('d2', 'd4')), f(('d7', 'd5')),
+                      f(('e4', 'e5')), f(('c7', 'c5')),
+                      f(('c2', 'c3')), f(("b8", "c6")),
+                      f(("g1", "f3")), f(("d8", "b6")),
+                      f(("d1", "b3")), f(("b6", "b3")),
+                      f(("a2", "b3"))], book) # french defense
+    book = lineadder([f(("e2", "e4")), f(("c7", "c5")),
+                      f(("g1", "f3")), f(("b8", "c6")),
+                      f(("d2", "d4")), f(("c5", "d4")),
+                      f(("f3", "d4")), f(("g8", "f6")),
+                      f(("b1", "c3")), f(("e7", "e6"))], book) # open sicilian defense with e6
     return book
 
 def insufficient_material(state):
