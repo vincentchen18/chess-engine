@@ -356,6 +356,17 @@ def build_opening_book():
     book = lineadder([f(("d2", "d4")), f(("d7", "d5")),
                       f(('b1', 'c3')), f(('g8', 'f6')),
                       f(("c1", "f4")), f(("c7", "c6"))], book) # jobava london
+    book = lineadder([f(("d2", "d4")), f(("g8", "f6")),
+                      f(("c2", "c4")), f(("g7", "g6")),
+                      f(("b1", "c3")), f(("f8", "g7")),
+                      f(("e2", "e4")), f(("d7", "d6")),
+                      f(("g1", "f3")), f(("e8", "g8")),
+                      f(("f1", "e2")),], book) # kings indian defense
+    book = lineadder([f(("c2", "c4")), f(("e7", "e5")),
+                      f(("b1", "c3")), f(("g8", "f6")),
+                      f(("g2", "g3")), f(("d7", "d6")),
+                      f(("f1", "g2"))], book) # english opening: reversed sicilian dragon variation
+
 
 
     return book
