@@ -806,10 +806,11 @@ run = True
 position_counts = {}
 position_counts[position_hash(state)] = 1
 current_eval = 0
-
+import time
 opening_book = build_opening_book()
 def vinniebot_think(state_copy):
     global vinniebot_result, current_eval
+    time.sleep(0.5)
     # try opening book first
     key = board_key(state_copy)
     if key in opening_book:
