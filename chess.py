@@ -309,6 +309,18 @@ def lineadder(listOfCoords, book):
     return book
 def f(x): #format coords
     return (c(x[0]), c(x[1]), None)
+def jump(listofSetupCoords, listofMoveCoords, book):
+    opening_state = make_state()
+    for coord in listofSetupCoords:
+        apply_move(opening_state, coord[0], coord[1])
+    for coord in listofMoveCoords:
+        key = board_key(opening_state)
+        if key in book.keys() and coord not in book[key]:
+            book[key].append(coord)
+        elif key not in book.keys():
+            book[key] = [coord]
+        apply_move(opening_state, coord[0], coord[1])
+    return book
 def build_opening_book():
     book = {}
     s = make_state()
@@ -344,7 +356,18 @@ def build_opening_book():
                       f(("b1", "c3")), f(("g8", "f6")),
                       f(("f2", "f4")), f(("d7", "d5")),
                       f(("f4", "e5")), f(("f6", "e4")),
-                      f(("d1", "f3")), f(("b8", "c6"))], book) #vienna gambit
+                      f(("d1", "f3")), f(("b8", "c6")),
+                      f(("f1", "b5")), f(("e4", "c3")),
+                      f(("b2", "c3")), f(("d8", "h4")),
+                      f(("f3", "f2"))], book) #vienna gambit
+    book = jump([f(("e2", "e4")), f(("e7", "e5")),
+                f(("b1", "c3")), f(("g8", "f6")),
+                f(("f2", "f4")), f(("d7", "d5")),
+                f(("f4", "e5")), f(("f6", "e4")),
+                f(("d1", "f3")), f(("b8", "c6")),
+                f(("c3", "e4"))], [f(("c6", "d4")),
+                                   f(("f3", "c3")), f(("d5", "e4")),
+                                   f(("g1", "e2"))], book)
     book = lineadder([f(("e2", "e4")), f(("e7", "e5")),
                       f(("g1", "f3")), f(("g8", "f6")),
                       f(("f3", "e5")), f(("b8", "c6")),
@@ -382,7 +405,7 @@ def build_opening_book():
                       f(("b1", "c3")), f(("g8", "f6")),
                       f(("g2", "g3")), f(("d7", "d6")),
                       f(("f1", "g2"))], book) # english opening: reversed sicilian dragon variation
-    #"""
+
 
 
 
@@ -1144,7 +1167,7 @@ while run:
             window.blit(glow, glow_rect)
 
     for piece in pieces:
-        window.blit(images[piece['value']], piece['rect'])
+        window.blit(images[piece['value']], (piece['rect'][0], piece['rect'][1]))
     if promoting is not None:
         square = promoting['square']
         team = promoting['team']
