@@ -635,6 +635,8 @@ def quiescence(state, alpha, beta):
     return alpha if state['turn'] == 1 else beta
 
 def minimax(state, depth, alpha, beta, counts): #alpha beta prune (like the connect4 engine)
+    if search_deadline is not None and time.time() > search_deadline:
+        raise TimeoutError
     if depth == 0:
         return quiescence(state, alpha, beta), None
     key = position_hash(state)
@@ -862,6 +864,7 @@ def get_grid_center(i, j):
 import threading # vinniebot thinks too slow >:((((((
 state = make_state()
 tt = {}
+search_deadline = None
 tt_exact, tt_lower, tt_upper = 0,1,2
 white_player,black_player,eval_choice = show_menu()
 promoting = None
@@ -876,7 +879,7 @@ current_eval = 0
 import time
 opening_book = build_opening_book()
 def vinniebot_think(state_copy):
-    global vinniebot_result, current_eval
+    global vinniebot_result, current_eval, search_deadline
     time.sleep(0.5)
     # try opening book first
     key = board_key(state_copy)
@@ -884,12 +887,20 @@ def vinniebot_think(state_copy):
         vinniebot_result = random.choice(opening_book[key])
         current_eval = 0  # book moves don't have eval scores
         return
-    # otherwise minimax
     counts_copy = dict(position_counts)
-    tt.clear()
-    evaluation, move = minimax(state_copy, 4, -math.inf, math.inf, counts_copy)
-    vinniebot_result = move
-    current_eval = evaluation
+    tt.clear()                              # fresh table for this move, kept across the passes below
+    best_move, best_eval = None, 0
+    search_deadline = time.time() + 3.0     # customise how long it thinks
+    for d in range(1, 7):                   # KNOB 2: iterative deepening, depth 1..6
+        try:
+            evaluation, move = minimax(state_copy, d, -math.inf, math.inf, counts_copy)
+        except TimeoutError:
+            break                           # if it runs outta time, just pick the best searched move
+        if move is not None:
+            best_move, best_eval = move, evaluation
+    search_deadline = None
+    vinniebot_result = best_move
+    current_eval = best_eval
 pieces = []
 for row_idx, row in enumerate(state['board']):
     for col_idx, val in enumerate(row):
