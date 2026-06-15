@@ -637,8 +637,21 @@ def quiescence(state, alpha, beta):
 def minimax(state, depth, alpha, beta, counts): #alpha beta prune (like the connect4 engine)
     if depth == 0:
         return quiescence(state, alpha, beta), None
+    key = position_hash(state)
     if counts.get(position_hash(state), 0) >= 3:
         return 0, None
+    alpha_orig, beta_orig = alpha, beta
+    entry = tt.get(key)
+    if entry is not None and entry[0] >= depth:
+        useless_variable, e_flag, e_value, e_move = entry
+        if e_flag == tt_exact:
+            return e_value, e_move
+        elif e_flag == tt_lower:
+            alpha = max(alpha, e_value)
+        elif e_flag == tt_upper:
+            beta = min(beta, e_value)
+        if alpha >= beta:
+            return e_value, e_move
     moves = order_moves(state, get_all_moves(state))
     if not moves:
         king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn']*6][0]
@@ -648,9 +661,12 @@ def minimax(state, depth, alpha, beta, counts): #alpha beta prune (like the conn
             return 0, None
     if insufficient_material(state):
         return 0, None
+    if entry is not None and entry[3] is not None and entry[3] in moves: #try to use the transposition table
+        moves.remove(entry[3])
+        moves.insert(0, entry[3])
 
     best_move = None
-    if state['turn'] == 1: #white, play move that maximises eval
+    if state['turn'] == 1:  #white, play move that maximises eval
         max_eval = float('-inf')
         for move in moves:
             newstate = clone_state(state)
@@ -665,8 +681,8 @@ def minimax(state, depth, alpha, beta, counts): #alpha beta prune (like the conn
             alpha = max(alpha, max_eval)
             if beta <= alpha:
                 break
-        return max_eval, best_move
-    else: #black, play move that minimises eval
+        value = max_eval
+    else:  #black, play move that minimises eval
         min_eval = math.inf
         for move in moves:
             newstate = clone_state(state)
@@ -681,7 +697,16 @@ def minimax(state, depth, alpha, beta, counts): #alpha beta prune (like the conn
             beta = min(beta, min_eval)
             if beta <= alpha:
                 break
-        return min_eval, best_move
+        value = min_eval
+
+    if value <= alpha_orig:  #transposition table
+        flag = tt_upper
+    elif value >= beta_orig:
+        flag = tt_lower
+    else:
+        flag = tt_exact
+    tt[key] = (depth, flag, value, best_move)
+    return value, best_move
 
 
 def show_menu():
@@ -836,6 +861,8 @@ def get_grid_center(i, j):
 
 import threading # vinniebot thinks too slow >:((((((
 state = make_state()
+tt = {}
+tt_exact, tt_lower, tt_upper = 0,1,2
 white_player,black_player,eval_choice = show_menu()
 promoting = None
 game_over = None
@@ -859,6 +886,7 @@ def vinniebot_think(state_copy):
         return
     # otherwise minimax
     counts_copy = dict(position_counts)
+    tt.clear()
     evaluation, move = minimax(state_copy, 4, -math.inf, math.inf, counts_copy)
     vinniebot_result = move
     current_eval = evaluation
