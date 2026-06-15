@@ -701,13 +701,14 @@ def minimax(state, depth, alpha, beta, counts): #alpha beta prune (like the conn
                 break
         value = min_eval
 
-    if value <= alpha_orig:  #transposition table
-        flag = tt_upper
-    elif value >= beta_orig:
-        flag = tt_lower
-    else:
-        flag = tt_exact
-    tt[key] = (depth, flag, value, best_move)
+    if abs(value) < 50000:  # don't save mate scores, corrupts passes and makes bot play bad moves
+        if value <= alpha_orig:
+            flag = tt_upper
+        elif value >= beta_orig:
+            flag = tt_lower
+        else:
+            flag = tt_exact
+        tt[key] = (depth, flag, value, best_move)
     return value, best_move
 
 
@@ -890,7 +891,7 @@ def vinniebot_think(state_copy):
     counts_copy = dict(position_counts)
     tt.clear()                              # fresh table for this move, kept across the passes below
     best_move, best_eval = None, 0
-    search_deadline = time.time() + 3.0     # customise how long it thinks
+    search_deadline = time.time() + 8.0     # customise how long it thinks
     for d in range(1, 7):                   # KNOB 2: iterative deepening, depth 1..6
         try:
             evaluation, move = minimax(state_copy, d, -math.inf, math.inf, counts_copy)
