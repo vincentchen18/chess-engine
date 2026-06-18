@@ -412,7 +412,6 @@ def build_opening_book():
                       f(("b1", "c3")), f(("g8", "f6")),
                       f(("g2", "g3")), f(("d7", "d6")),
                       f(("f1", "g2"))], book) # english opening: reversed sicilian dragon variation
-    book = lineadder([f(("g2", "g3")), f(("e8", "g8")), f(("f1", "g2")), f(("g8", "e8"))], {})
 
 
 
