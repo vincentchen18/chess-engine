@@ -387,6 +387,13 @@ def build_opening_book():
                       f(("g1", "f3")), f(("d8", "b6")),
                       f(("d1", "b3")), f(("b6", "b3")),
                       f(("a2", "b3"))], book) # french defense
+    book = jump([f(("e2", "e4")), f(("e7", "e6")),
+                      f(('d2', 'd4')), f(('d7', 'd5')),
+                      f(('e4', 'e5')), f(('c7', 'c5')),
+                      f(('c2', 'c3')), f(("b8", "c6")),
+                      f(("g1", "f3")), f(("d8", "b6")),
+                      f(("f1", "d3")), f(("c5", "d4")),
+                      f(("c3", "d4"))], [f(("f8", "b4"))], book)
     book = lineadder([f(("e2", "e4")), f(("c7", "c5")),
                       f(("g1", "f3")), f(("b8", "c6")),
                       f(("d2", "d4")), f(("c5", "d4")),
@@ -891,8 +898,8 @@ def vinniebot_think(state_copy):
     counts_copy = dict(position_counts)
     tt.clear()                              # fresh table for this move, kept across the passes below
     best_move, best_eval = None, 0
-    search_deadline = time.time() + 8.0     # customise how long it thinks
-    for d in range(1, 7):                   # KNOB 2: iterative deepening, depth 1..6
+    search_deadline = time.time() + 10.0     # customise how long it thinks
+    for d in range(1, 10):                   # change depth
         try:
             evaluation, move = minimax(state_copy, d, -math.inf, math.inf, counts_copy)
         except TimeoutError:
@@ -1185,7 +1192,8 @@ while run:
                 if state['board'][row][col] == 6 or state['board'][row][col] == -6:
                     pygame.draw.circle(window, (200, 0, 0, 120), center, size // 2 - 4)
                 elif state['board'][row][col] != 0:
-                    pygame.draw.circle(window, (0, 0, 0, 120), center, size // 2 - 4, 5)
+                    pygame.draw.circle(window,
+                                       (0, 0, 0, 120), center, size // 2 - 4, 5)
                 else:
                     pygame.draw.circle(window, (0, 0, 0, 120), center, size // 6.5)
     if game_over == 'checkmate':
