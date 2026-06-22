@@ -412,7 +412,15 @@ def build_opening_book():
                       f(("b1", "c3")), f(("g8", "f6")),
                       f(("g2", "g3")), f(("d7", "d6")),
                       f(("f1", "g2"))], book) # english opening: reversed sicilian dragon variation
-
+    book = lineadder([f(("e2", "e4")), f(("g7", "g6")),
+                      f(("d2", "d4")), f(("f8", "g7")),
+                      f(("g1", "f3")), f(("c7", "c5")),
+                      f(("d4", "c5")), f(("b8", "c6"))], book) # modern defense
+    book = lineadder([f(("e2", "e4")), f(("g7", "g6")),
+                      f(("d2", "d4")), f(("f8", "g7")),
+                      f(("b1", "c3")), f(("c7", "c5")),
+                      f(("d4", "c5")), f(("g7", "c3")),
+                      f(("b1", "c3"))], book)  # modern defense
 
 
     return book
