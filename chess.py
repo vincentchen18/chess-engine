@@ -856,6 +856,7 @@ for val, filename in piece_files.items():
     img = pygame.image.load(path).convert_alpha()
     img = pygame.transform.smoothscale(img, (size - 4, size - 4))
     images[val] = img
+pygame.display.set_icon(pygame.image.load(resource_path(os.path.join('pieces', 'icon.png'))))
 icon_files = {
     'crown': 'crown.png',
     'half':  'half.png',
