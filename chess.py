@@ -393,7 +393,7 @@ def build_opening_book():
                       f(('c2', 'c3')), f(("b8", "c6")),
                       f(("g1", "f3")), f(("d8", "b6")),
                       f(("f1", "d3")), f(("c5", "d4")),
-                      f(("c3", "d4"))], [f(("f8", "b4"))], book)
+                      f(("c3", "d4"))], [f(("c8", "d7"))], book)
     book = lineadder([f(("e2", "e4")), f(("c7", "c5")),
                       f(("g1", "f3")), f(("b8", "c6")),
                       f(("d2", "d4")), f(("c5", "d4")),
@@ -412,7 +412,6 @@ def build_opening_book():
                       f(("b1", "c3")), f(("g8", "f6")),
                       f(("g2", "g3")), f(("d7", "d6")),
                       f(("f1", "g2"))], book) # english opening: reversed sicilian dragon variation
-
 
 
 
@@ -900,7 +899,7 @@ def vinniebot_think(state_copy):
     tt.clear()                              # fresh table for this move, kept across the passes below
     best_move, best_eval = None, 0
     search_deadline = time.time() + 10.0     # customise how long it thinks
-    for d in range(1, 10):                   # change depth
+    for d in range(1, 10):                   # KNOB 2: iterative deepening, depth 1..6
         try:
             evaluation, move = minimax(state_copy, d, -math.inf, math.inf, counts_copy)
         except TimeoutError:
