@@ -640,7 +640,11 @@ def quiescence(state, alpha, beta):
 
     return alpha if state['turn'] == 1 else beta
 
-def minimax(state, depth, alpha, beta, counts, ply=0): #alpha beta prune (like the connect4 engine)
+def gives_check(state):
+    team = state['turn']
+    king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == team * 6][0]
+    return is_check(state['board'], team, king_pos)
+def minimax(state, depth, alpha, beta, counts, ply=0, extension=4): #alpha beta prune (like the connect4 engine)
     if search_deadline is not None and time.time() > search_deadline:
         raise TimeoutError
     if depth == 0:
@@ -682,7 +686,8 @@ def minimax(state, depth, alpha, beta, counts, ply=0): #alpha beta prune (like t
             new_counts = dict(counts)
             new_key = position_hash(newstate)
             new_counts[new_key] = new_counts.get(new_key, 0) + 1
-            eval_score, useless_variable = minimax(newstate, depth - 1, alpha, beta, new_counts, ply+1)
+            extension = 1 if (extension > 0 and gives_check(newstate)) else 0
+            eval_score, useless_variable = minimax(newstate, depth - 1 + extension, alpha, beta, new_counts, ply + 1, extension - extension)
             if eval_score > max_eval:
                 max_eval = eval_score
                 best_move = move
@@ -698,7 +703,8 @@ def minimax(state, depth, alpha, beta, counts, ply=0): #alpha beta prune (like t
             new_counts = dict(counts)
             new_key = position_hash(newstate)
             new_counts[new_key] = new_counts.get(new_key, 0) + 1
-            eval_score, useless_variable = minimax(newstate, depth - 1, alpha, beta, new_counts, ply+1)
+            extension = 1 if (extension > 0 and gives_check(newstate)) else 0
+            eval_score, useless_variable = minimax(newstate, depth - 1 + extension, alpha, beta, new_counts, ply + 1, extension - extension)
             if eval_score < min_eval:
                 min_eval = eval_score
                 best_move = move
@@ -898,7 +904,7 @@ def vinniebot_think(state_copy):
     counts_copy = dict(position_counts)
     tt.clear()                              # fresh table for this move, kept across the passes below
     best_move, best_eval = None, 0
-    search_deadline = time.time() + 10.0     # customise how long it thinks
+    search_deadline = time.time() + 15.0     # customise how long it thinks
     for d in range(1, 10):                   # KNOB 2: iterative deepening, depth 1..6
         try:
             evaluation, move = minimax(state_copy, d, -math.inf, math.inf, counts_copy)
