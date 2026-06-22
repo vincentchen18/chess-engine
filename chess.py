@@ -641,7 +641,7 @@ def quiescence(state, alpha, beta):
 
     return alpha if state['turn'] == 1 else beta
 
-def minimax(state, depth, alpha, beta, counts): #alpha beta prune (like the connect4 engine)
+def minimax(state, depth, alpha, beta, counts, ply=0): #alpha beta prune (like the connect4 engine)
     if search_deadline is not None and time.time() > search_deadline:
         raise TimeoutError
     if depth == 0:
@@ -665,7 +665,7 @@ def minimax(state, depth, alpha, beta, counts): #alpha beta prune (like the conn
     if not moves:
         king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == state['turn']*6][0]
         if is_check(state['board'], state['turn'], king_pos):
-            return (-100000 - depth) * state['turn'], None # checkmate, subtract depth so bot prefers faster mates
+            return (-100000 + ply) * state['turn'], None # checkmate, subtract depth so bot prefers faster mates
         else:
             return 0, None
     if insufficient_material(state):
@@ -683,7 +683,7 @@ def minimax(state, depth, alpha, beta, counts): #alpha beta prune (like the conn
             new_counts = dict(counts)
             new_key = position_hash(newstate)
             new_counts[new_key] = new_counts.get(new_key, 0) + 1
-            eval_score, useless_variable = minimax(newstate, depth - 1, alpha, beta, new_counts)
+            eval_score, useless_variable = minimax(newstate, depth - 1, alpha, beta, new_counts, ply+1)
             if eval_score > max_eval:
                 max_eval = eval_score
                 best_move = move
@@ -699,7 +699,7 @@ def minimax(state, depth, alpha, beta, counts): #alpha beta prune (like the conn
             new_counts = dict(counts)
             new_key = position_hash(newstate)
             new_counts[new_key] = new_counts.get(new_key, 0) + 1
-            eval_score, useless_variable = minimax(newstate, depth - 1, alpha, beta, new_counts)
+            eval_score, useless_variable = minimax(newstate, depth - 1, alpha, beta, new_counts, ply+1)
             if eval_score < min_eval:
                 min_eval = eval_score
                 best_move = move
@@ -886,6 +886,7 @@ position_counts[position_hash(state)] = 1
 current_eval = 0
 import time
 opening_book = build_opening_book()
+last_move = None
 def vinniebot_think(state_copy):
     global vinniebot_result, current_eval, search_deadline
     time.sleep(0.5)
@@ -1029,6 +1030,7 @@ while run:
                         moved_piece = piece['value']
                         is_en_passant = abs(moved_piece) == 1 and state['en_passant_target'] is not None and end_square == state['en_passant_target'] and start_square[1] != end_square[1]
                         # legal move, apply it
+                        last_move = (start_square, end_square)
                         state['board'][start_square[0]][start_square[1]] = 0
                         state['board'][end_square[0]][end_square[1]] = piece['value']
 
@@ -1118,6 +1120,7 @@ while run:
     if vinniebot_thread is not None and not vinniebot_thread.is_alive():
         if vinniebot_result is not None:
             apply_move(state, vinniebot_result[0], vinniebot_result[1], vinniebot_result[2])
+            last_move = (vinniebot_result[0], vinniebot_result[1])
             # rebuild pieces
             key = position_hash(state)
             position_counts[key] = position_counts.get(key, 0) + 1
@@ -1150,6 +1153,12 @@ while run:
             vinniebot_thread.start()
 
     window.blit(board_surface, (0, 0))
+    if last_move is not None: # draw the last move thingy
+        highlight = pygame.Surface((size, size), pygame.SRCALPHA)
+        highlight.fill((220, 220, 105, 110))
+        for squ in last_move:
+            row, col = squ
+            window.blit(highlight, (start_x + col*size, start_y + row*size))
     if eval_choice == 'on':
         bar_x = start_x + size * 8 + 10
         bar_y = start_y
@@ -1158,17 +1167,18 @@ while run:
 
         pygame.draw.rect(window, (40, 40, 40), (bar_x, bar_y, bar_width, bar_height))
 
-        if abs(current_eval) > 100000:
-            eval_text = "1-0" if current_eval > 0 else "0-1"
-            eval_pawns = 10 if current_eval > 0 else -10
+        if game_over == 'checkmate':
+            eval_text = '0-1' if loser_team == 1 else '1-0'
+            eval_pawns = -10 if loser_team == 1 else 10
         elif abs(current_eval) > 50000:
-            mate_depth = abs(current_eval) - 100000
-            mate_in_moves = max(1, (mate_depth + 1) // 2)
-            eval_text = f"{'+M' if current_eval > 0 else '-M'}{mate_in_moves}"
+            current_eval += 1 if current_eval > 0 else -1
+            plys_to_mate = 100000 - abs(current_eval)
+            mate_moves = max(1, (plys_to_mate+1)//2)
+            eval_text = f"{"+M" if current_eval > 0 else "-M"}{mate_moves}"
             eval_pawns = 10 if current_eval > 0 else -10
         else:
-            eval_pawns = max(-10, min(10, current_eval / 100))
-            sign = '+' if eval_pawns >= 0 else ''
+            eval_pawns = max(-10, min(10, current_eval // 100))
+            sign = "+" if eval_pawns >= 0 else ""
             eval_text = f"{sign}{eval_pawns:.1f}"
 
         white_proportion = (eval_pawns + 10) / 20
