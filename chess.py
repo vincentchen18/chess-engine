@@ -1120,6 +1120,8 @@ while run:
         if vinniebot_result is not None:
             apply_move(state, vinniebot_result[0], vinniebot_result[1], vinniebot_result[2])
             last_move = (vinniebot_result[0], vinniebot_result[1])
+            if abs(current_eval) > 50000:
+                current_eval += 1 if current_eval > 0 else -1
             # rebuild pieces
             key = position_hash(state)
             position_counts[key] = position_counts.get(key, 0) + 1
@@ -1170,7 +1172,6 @@ while run:
             eval_text = '0-1' if loser_team == 1 else '1-0'
             eval_pawns = -10 if loser_team == 1 else 10
         elif abs(current_eval) > 50000:
-            current_eval += 1 if current_eval > 0 else -1
             plys_to_mate = 100000 - abs(current_eval)
             mate_moves = max(1, (plys_to_mate+1)//2)
             eval_text = f"{"+M" if current_eval > 0 else "-M"}{mate_moves}"
