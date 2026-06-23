@@ -421,6 +421,22 @@ def build_opening_book():
                       f(("b1", "c3")), f(("c7", "c5")),
                       f(("d4", "c5")), f(("g7", "c3")),
                       f(("b1", "c3"))], book)  # modern defense
+    book = lineadder([f(("e2", "e4")), f(("c7", "c6")),
+                      f(("d2", "d4")), f(("d7", "d5")),
+                      f(("e4", "e5")), f(("c6", "c5")),
+                      f(("c2", "c3")), f(("b8", "c6"))], book)
+    book = lineadder([f(("e2", "e4")), f(("c7", "c6")),
+                      f(("d2", "d4")), f(("d7", "d5")),
+                      f(("b1", "d2")), f(("e7", "e6")),
+                      f(("g1", "f3")), f(("b8", "d7"))], book)
+    book = lineadder([f(("e2", "e4")), f(("c7", "c6")),
+                      f(("d2", "d4")), f(("d7", "d5")),
+                      f(("e4", "e5")), f(("c8", "f5")),
+                      f(("h2", "h4")), f(("h7", "h6"))], book)
+    book = lineadder([f(("e2", "e4")), f(("c7", "c6")),
+                      f(("d2", "d4")), f(("d7", "d5")),
+                      f(("e4", "e5")), f(("c8", "f5")),
+                      f(("g1", "f3")), f(("e7", "e6"))], book)
 
 
     return book
