@@ -436,8 +436,12 @@ def build_opening_book():
     book = lineadder([f(("e2", "e4")), f(("c7", "c6")),
                       f(("d2", "d4")), f(("d7", "d5")),
                       f(("e4", "e5")), f(("c8", "f5")),
-                      f(("g1", "f3")), f(("e7", "e6"))], book)
-
+                      f(("g1", "f3")), f(("e7", "e6"))], book) #carokann
+    book = lineadder([f(("e2", "e4")), f(("c7", "c5")),
+                      f(("c2", "c3")), f(("d7", "d5")),
+                      f(("e4", "e5")), f(("d5", "d4")),
+                      f(("g1", "f3")), f(("b8", "c6")),
+                      f(("f1", "b5"))], book)
 
     return book
 
