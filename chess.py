@@ -677,7 +677,7 @@ def gives_check(state):
     team = state['turn']
     king_pos = [(r, c) for r in range(8) for c in range(8) if state['board'][r][c] == team * 6][0]
     return is_check(state['board'], team, king_pos)
-def minimax(state, depth, alpha, beta, counts, ply=0, extension=4): #alpha beta prune (like the connect4 engine)
+def minimax(state, depth, alpha, beta, counts, ply=0, ext_left=4): #alpha beta prune (like the connect4 engine)
     if search_deadline is not None and time.time() > search_deadline:
         raise TimeoutError
     if depth == 0:
@@ -719,8 +719,8 @@ def minimax(state, depth, alpha, beta, counts, ply=0, extension=4): #alpha beta 
             new_counts = dict(counts)
             new_key = position_hash(newstate)
             new_counts[new_key] = new_counts.get(new_key, 0) + 1
-            extension = 1 if (extension > 0 and gives_check(newstate)) else 0
-            eval_score, useless_variable = minimax(newstate, depth - 1 + extension, alpha, beta, new_counts, ply + 1, extension - extension)
+            ext = 1 if (ext_left > 0 and gives_check(newstate)) else 0
+            eval_score, useless_variable = minimax(newstate, depth - 1 + ext, alpha, beta, new_counts, ply + 1, ext_left - ext)
             if eval_score > max_eval:
                 max_eval = eval_score
                 best_move = move
@@ -736,8 +736,8 @@ def minimax(state, depth, alpha, beta, counts, ply=0, extension=4): #alpha beta 
             new_counts = dict(counts)
             new_key = position_hash(newstate)
             new_counts[new_key] = new_counts.get(new_key, 0) + 1
-            extension = 1 if (extension > 0 and gives_check(newstate)) else 0
-            eval_score, useless_variable = minimax(newstate, depth - 1 + extension, alpha, beta, new_counts, ply + 1, extension - extension)
+            ext = 1 if (ext_left > 0 and gives_check(newstate)) else 0
+            eval_score, useless_variable = minimax(newstate, depth - 1 + ext, alpha, beta, new_counts, ply + 1, ext_left - ext)
             if eval_score < min_eval:
                 min_eval = eval_score
                 best_move = move
@@ -908,8 +908,16 @@ def get_grid_center(i, j):
     y = board_rect.top + board_rect.height // 8 * (7 - j) + board_rect.height // 16
     return x, y
 
+def get_grid_center(i, j):
+    if flipped:
+        i, j = 7-i, 7-j
+    x = board_rect.left + board_rect.width // 8 * i + board_rect.width // 16
+    y = board_rect.top + board_rect.height // 8 * (7 - j) + board_rect.height // 16
+    return x, y
+
 import threading # vinniebot thinks too slow >:((((((
 state = make_state()
+flipped = False #boardflipping variable
 tt = {}
 search_deadline = None
 tt_exact, tt_lower, tt_upper = 0,1,2
@@ -1042,6 +1050,8 @@ while run:
                         piece['start_cell'] = (old_i, old_j)
                         piece['start_center'] = piece['rect'].center
                         start_square = (7 - old_j, old_i)
+                        if flipped:
+                            start_square = (7 - start_square[0], 7 - start_square[1])
                         piece['legal_moves'] = get_legal_moves(state, start_square)
                         pieces.remove(piece)
                         pieces.append(piece)
@@ -1062,7 +1072,9 @@ while run:
 
                     start_square = (7 - start_j, start_i)
                     end_square = (7 - new_j, new_i)
-
+                    if flipped:
+                        start_square = (7 - start_square[0], 7 - start_square[1])
+                        end_square = (7 - end_square[0], 7 - end_square[1])
                     legal = get_legal_moves(state, start_square)
 
                     if end_square in legal and end_square != start_square:
@@ -1156,6 +1168,14 @@ while run:
                 if piece['dragging']:
                     piece['rect'].x = event.pos[0] - piece['rel_pos'][0]
                     piece['rect'].y = event.pos[1] - piece['rel_pos'][1]
+        if event.type == pygame.KEYDOWN and (event.key == pygame.K_f or event.key == pygame.K_x): #x or f to flip board
+            flipped = not flipped
+            pieces = []
+            for r_idx, row in enumerate(state['board']):
+                for c_idx, val in enumerate(row):
+                    if val != 0:
+                        rect = images[val].get_rect(center=get_grid_center(c_idx, 7 - r_idx))
+                        pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
     if vinniebot_thread is not None and not vinniebot_thread.is_alive():
         if vinniebot_result is not None:
             apply_move(state, vinniebot_result[0], vinniebot_result[1], vinniebot_result[2])
@@ -1217,7 +1237,7 @@ while run:
             eval_text = f"{"+M" if current_eval > 0 else "-M"}{mate_moves}"
             eval_pawns = 10 if current_eval > 0 else -10
         else:
-            eval_pawns = max(-10, min(10, current_eval // 100))
+            eval_pawns = max(-10, min(10, current_eval / 100))
             sign = "+" if eval_pawns >= 0 else ""
             eval_text = f"{sign}{eval_pawns:.1f}"
 
