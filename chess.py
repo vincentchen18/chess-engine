@@ -1219,7 +1219,9 @@ while run:
         highlight.fill((220, 220, 105, 110))
         for squ in last_move:
             row, col = squ
-            window.blit(highlight, (start_x + col*size, start_y + row*size))
+            if flipped:
+                row, col = 7 - row, 7 - col
+            window.blit(highlight, (start_x + col * size, start_y + row * size))
     if eval_choice == 'on':
         bar_x = start_x + size * 8 + 10
         bar_y = start_y
