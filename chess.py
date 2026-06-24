@@ -973,6 +973,14 @@ while run:
     for event in event_list:
         if event.type == pygame.QUIT:
             run = False
+        if event.type == pygame.KEYDOWN and (event.key == pygame.K_f or event.key == pygame.K_x): #x or f to flip board
+            flipped = not flipped
+            pieces = []
+            for r_idx, row in enumerate(state['board']):
+                for c_idx, val in enumerate(row):
+                    if val != 0:
+                        rect = images[val].get_rect(center=get_grid_center(c_idx, 7 - r_idx))
+                        pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
         if vinniebot_thread is not None:
             continue
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -1168,14 +1176,6 @@ while run:
                 if piece['dragging']:
                     piece['rect'].x = event.pos[0] - piece['rel_pos'][0]
                     piece['rect'].y = event.pos[1] - piece['rel_pos'][1]
-        if event.type == pygame.KEYDOWN and (event.key == pygame.K_f or event.key == pygame.K_x): #x or f to flip board
-            flipped = not flipped
-            pieces = []
-            for r_idx, row in enumerate(state['board']):
-                for c_idx, val in enumerate(row):
-                    if val != 0:
-                        rect = images[val].get_rect(center=get_grid_center(c_idx, 7 - r_idx))
-                        pieces.append({'value': val, 'rect': rect, 'dragging': False, 'rel_pos': (0, 0)})
     if vinniebot_thread is not None and not vinniebot_thread.is_alive():
         if vinniebot_result is not None:
             apply_move(state, vinniebot_result[0], vinniebot_result[1], vinniebot_result[2])
