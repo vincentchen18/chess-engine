@@ -42,7 +42,7 @@ To move the pieces, it's just drag and drop, but it won't let you move if you tr
 
 ### AI Disclaimer:
 
-AI was used throughout the project for assistance in asset crediting, fixing file packaging problems (for )
+AI was used throughout the project for assistance in asset crediting, fixing file packaging problems and occasionally debugging. However all code was written and tested by me, and all assets were found by me.
 
 ## Asset Credits
 
