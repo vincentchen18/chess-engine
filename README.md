@@ -7,6 +7,7 @@ My bot is built with a minimax algorithm using alpha-beta search for speed optim
 I also finally learned pygame GUI so yeah you don't have to play in the terminal anymore! Have fun :)))
 
 ![Chess image](readme%20image.png)
+
 me getting destroyed by my bot.
 
 ## Usage instructions
